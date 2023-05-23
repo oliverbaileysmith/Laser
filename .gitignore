@@ -1,0 +1,9 @@
+# Visual studio
+/.vs/
+
+# Compiled binary folders
+/bin/
+/bin-int/
+
+# Output image file
+**/output.ppm

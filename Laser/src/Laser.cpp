@@ -77,8 +77,14 @@ int main()
 
 	cl_float3* cpuOutput = new cl_float3[imageWidth * imageHeight];
 
+	cl_float3* triangle = new cl_float3[3];
+	triangle[0] = { -0.5f,-0.5f,-2.0f };
+	triangle[1] = {  0.5f,-0.5f,-2.0f };
+	triangle[2] = {  0.0f, 0.5f,-2.0f };
+
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
+	cl::Buffer clTriangle(context, CL_MEM_READ_ONLY, 3 * sizeof(cl_float3));
 
 	// OpenCL kernel arguments
 	kernel.setArg(0, clOutput);
@@ -90,6 +96,7 @@ int main()
 	kernel.setArg(6, focalLength);
 	kernel.setArg(7, cameraOrigin);
 	kernel.setArg(8, lowerLeftCorner);
+	kernel.setArg(9, clTriangle);
 
 	// OpenCL command queue
 	cl::CommandQueue queue(context, device);
@@ -99,6 +106,7 @@ int main()
 	std::size_t localWorkSize = 64;
 
 	// Queue kernel execution and read result from device buffer
+	queue.enqueueWriteBuffer(clTriangle, CL_TRUE, 0, 3 * sizeof(cl_float3), triangle);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
 	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), cpuOutput);
 

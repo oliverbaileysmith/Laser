@@ -4,6 +4,13 @@
 
 #include <CL/cl.hpp>
 
+struct Triangle
+{
+	cl_float3 v0;
+	cl_float3 v1;
+	cl_float3 v2;
+};
+
 int main()
 {
 	// OpenCL platform
@@ -77,14 +84,14 @@ int main()
 
 	cl_float3* cpuOutput = new cl_float3[imageWidth * imageHeight];
 
-	cl_float3* triangle = new cl_float3[3];
-	triangle[0] = { -0.5f, -0.5f, -1.0f };
-	triangle[1] = {  0.5f, -0.5f, -1.0f };
-	triangle[2] = {  0.0f,  0.5f, -1.0f };
+	Triangle tri;
+	tri.v0 = { -0.5f, -0.5f, -1.0f };
+	tri.v1 = {  0.5f, -0.5f, -1.0f };
+	tri.v2 = {  0.0f,  0.5f, -1.0f };
 
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
-	cl::Buffer clTriangle(context, CL_MEM_READ_ONLY, 3 * sizeof(cl_float3));
+	cl::Buffer clTriangle(context, CL_MEM_READ_ONLY, sizeof(tri));
 
 	// OpenCL kernel arguments
 	kernel.setArg(0, clOutput);
@@ -106,7 +113,7 @@ int main()
 	std::size_t localWorkSize = 64;
 
 	// Queue kernel execution and read result from device buffer
-	queue.enqueueWriteBuffer(clTriangle, CL_TRUE, 0, 3 * sizeof(cl_float3), triangle);
+	queue.enqueueWriteBuffer(clTriangle, CL_TRUE, 0, sizeof(tri), &tri);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
 	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), cpuOutput);
 

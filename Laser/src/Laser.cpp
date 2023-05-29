@@ -70,17 +70,17 @@ int main()
 	float viewportWidth = viewportHeight * aspectRatio;
 	float focalLength = 1.0f;
 	cl_float3 cameraOrigin = { 0.0f,0.0f,0.0f };
-	cl_float3 lowerLeftCorner = cameraOrigin;
-	lowerLeftCorner.x -= viewportWidth / 2.0f;
-	lowerLeftCorner.y -= viewportHeight / 2.0f;
-	lowerLeftCorner.z -= focalLength;
+	cl_float3 upperLeftCorner = cameraOrigin;
+	upperLeftCorner.x -= viewportWidth / 2.0f;
+	upperLeftCorner.y += viewportHeight / 2.0f;
+	upperLeftCorner.z -= focalLength;
 
 	cl_float3* cpuOutput = new cl_float3[imageWidth * imageHeight];
 
 	cl_float3* triangle = new cl_float3[3];
-	triangle[0] = { -0.5f,-0.5f,-2.0f };
-	triangle[1] = {  0.5f,-0.5f,-2.0f };
-	triangle[2] = {  0.0f, 0.5f,-2.0f };
+	triangle[0] = { -0.5f, -0.5f, -1.0f };
+	triangle[1] = {  0.5f, -0.5f, -1.0f };
+	triangle[2] = {  0.0f,  0.5f, -1.0f };
 
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
@@ -95,7 +95,7 @@ int main()
 	kernel.setArg(5, viewportHeight);
 	kernel.setArg(6, focalLength);
 	kernel.setArg(7, cameraOrigin);
-	kernel.setArg(8, lowerLeftCorner);
+	kernel.setArg(8, upperLeftCorner);
 	kernel.setArg(9, clTriangle);
 
 	// OpenCL command queue

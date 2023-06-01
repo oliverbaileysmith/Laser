@@ -6,13 +6,6 @@
 
 struct Triangle
 {
-	cl_float3 v0;
-	cl_float3 v1;
-	cl_float3 v2;
-};
-
-struct TriangleIndices
-{
 	cl_uint v0;
 	cl_uint v1;
 	cl_uint v2;
@@ -78,9 +71,9 @@ int main()
 	cl_int buildError = program.build({ device }, "");
 	if (buildError)
 	{
-		std::cout << "OpenCL program compilation error: " << buildError << std::endl;
+		std::cout << std::endl << "OpenCL program compilation error: " << buildError << std::endl;
 		std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
-		std::cerr << "Build log:" << std::endl << buildLog << std::endl;
+		std::cout << "Build log:" << std::endl << buildLog << std::endl;
 		return -1;
 	}
 
@@ -102,29 +95,24 @@ int main()
 
 	cl_float3* cpuOutput = new cl_float3[imageWidth * imageHeight];
 
-	Triangle tri;
-	tri.v0 = { -0.5f, -0.5f, -1.0f };
-	tri.v1 = {  0.5f, -0.5f, -1.0f };
-	tri.v2 = {  0.0f,  0.5f, -1.0f };
-
 	RenderStats stats;
 
 	// Temporary dummy mesh vertices and indices
-	unsigned int nVertices = 4;
-	cl_float3 vertices[4];
+	cl_float3 vertices[5];
 	vertices[0] = { -0.5f, -0.5f, -1.0f };
 	vertices[1] = {  0.5f, -0.5f, -1.0f };
 	vertices[2] = {  0.5f,  0.5f, -1.0f };
 	vertices[3] = { -0.5f,  0.5f, -1.0f };
+	vertices[4] = {  0.0f,  0.7f, -1.0f };
 
-	unsigned int nTriangles = 2;
-	TriangleIndices triangles[2];
+	unsigned int n_Triangles = 3;
+	Triangle triangles[3];
 	triangles[0] = { 0, 1, 2 };
 	triangles[1] = { 0, 2, 3 };
+	triangles[2] = { 3, 2, 4 };
 
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
-	cl::Buffer clTriangle(context, CL_MEM_READ_ONLY, sizeof(tri));
 	cl::Buffer clStats(context, CL_MEM_READ_WRITE, sizeof(RenderStats));
 	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, sizeof(vertices));
 	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, sizeof(triangles));
@@ -139,12 +127,10 @@ int main()
 	kernel.setArg(6, focalLength);
 	kernel.setArg(7, cameraOrigin);
 	kernel.setArg(8, upperLeftCorner);
-	kernel.setArg(9, clTriangle);
-	kernel.setArg(10, clStats);
-	kernel.setArg(11, nVertices);
-	kernel.setArg(12, clVertices);
-	kernel.setArg(13, nTriangles);
-	kernel.setArg(14, clTriangles);
+	kernel.setArg(9, clVertices);
+	kernel.setArg(10, clTriangles);
+	kernel.setArg(11, n_Triangles);
+	kernel.setArg(12, clStats);
 
 	// OpenCL command queue
 	cl::CommandQueue queue(context, device);
@@ -156,7 +142,6 @@ int main()
 	clock_t timeStart = clock();
 
 	// Queue kernel execution and read result from device buffer
-	queue.enqueueWriteBuffer(clTriangle, CL_TRUE, 0, sizeof(tri), &tri);
 	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, sizeof(vertices), &vertices);
 	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, sizeof(triangles), &triangles);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);

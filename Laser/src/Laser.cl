@@ -11,6 +11,13 @@ struct Triangle
 	float3 v2;
 };
 
+struct TriangleIndices
+{
+	unsigned int v0;
+	unsigned int v1;
+	unsigned int v2;
+};
+
 struct RenderStats
 {
 	unsigned int n_PrimaryRays;
@@ -67,7 +74,9 @@ __kernel void Laser(__global float3* output,
 	float viewportWidth, float viewportHeight, float focalLength,
 	float3 cameraOrigin, float3 upperLeftCorner,
 	__global struct Triangle* triangle,
-	__global struct RenderStats* stats)
+	__global struct RenderStats* stats,
+	unsigned int nVertices, __global float3* vertices,
+	unsigned int nTriangles, __global struct TriangleIndices* triangles)
 {
 	// calculate pixel coordinates
 	const int workItemID = get_global_id(0);

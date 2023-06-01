@@ -11,6 +11,13 @@ struct Triangle
 	cl_float3 v2;
 };
 
+struct TriangleIndices
+{
+	cl_uint v0;
+	cl_uint v1;
+	cl_uint v2;
+};
+
 struct RenderStats
 {
 	cl_uint n_PrimaryRays = 0;
@@ -100,10 +107,25 @@ int main()
 
 	RenderStats stats;
 
+	// Temporary dummy mesh vertices and indices
+	unsigned int nVertices = 4;
+	cl_float3 vertices[4];
+	vertices[0] = { -0.5f, -0.5f, -1.0f };
+	vertices[1] = {  0.5f, -0.5f, -1.0f };
+	vertices[2] = {  0.5f,  0.5f, -1.0f };
+	vertices[3] = { -0.5f,  0.5f, -1.0f };
+
+	unsigned int nTriangles = 2;
+	TriangleIndices triangles[2];
+	triangles[0] = { 0, 1, 2 };
+	triangles[1] = { 0, 2, 3 };
+
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
 	cl::Buffer clTriangle(context, CL_MEM_READ_ONLY, sizeof(tri));
 	cl::Buffer clStats(context, CL_MEM_READ_WRITE, sizeof(RenderStats));
+	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, sizeof(vertices));
+	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, sizeof(triangles));
 
 	// OpenCL kernel arguments
 	kernel.setArg(0, clOutput);
@@ -117,6 +139,10 @@ int main()
 	kernel.setArg(8, upperLeftCorner);
 	kernel.setArg(9, clTriangle);
 	kernel.setArg(10, clStats);
+	kernel.setArg(11, nVertices);
+	kernel.setArg(12, clVertices);
+	kernel.setArg(13, nTriangles);
+	kernel.setArg(14, clTriangles);
 
 	// OpenCL command queue
 	cl::CommandQueue queue(context, device);
@@ -129,6 +155,8 @@ int main()
 
 	// Queue kernel execution and read result from device buffer
 	queue.enqueueWriteBuffer(clTriangle, CL_TRUE, 0, sizeof(tri), &tri);
+	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, sizeof(vertices), &vertices);
+	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, sizeof(triangles), &triangles);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
 	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), cpuOutput);
 	queue.enqueueReadBuffer(clStats, CL_TRUE, 0, sizeof(RenderStats), &stats);

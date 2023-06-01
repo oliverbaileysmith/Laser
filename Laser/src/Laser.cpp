@@ -79,6 +79,8 @@ int main()
 	if (buildError)
 	{
 		std::cout << "OpenCL program compilation error: " << buildError << std::endl;
+		std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+		std::cerr << "Build log:" << std::endl << buildLog << std::endl;
 		return -1;
 	}
 

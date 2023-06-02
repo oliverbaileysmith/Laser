@@ -19,8 +19,11 @@ struct RenderStats
 	float renderTime;
 };
 
-bool intersectTriangle(struct Ray* ray, float3* v0, float3* v1, float3* v2, float* t)
+bool intersectTriangle(struct Ray* ray, float3* v0, float3* v1, float3* v2,
+	float* t, __global struct RenderStats* renderStats)
 {
+	atomic_inc(&(renderStats->n_RayTriangleTests));
+
 	// calculate triangle/plane normal
 	float3 n;
 	float3 v0v1 = *v1 - *v0;
@@ -61,11 +64,13 @@ bool intersectTriangle(struct Ray* ray, float3* v0, float3* v1, float3* v2, floa
 	if (dot(n, C) < 0.0f)
 		return false;
 
+	atomic_inc(&(renderStats->n_RayTriangleIsects));
 	return true;
 }
 
 bool intersect(struct Ray* ray, __global float3* vertices,
-	__global struct Triangle* triangles, unsigned int n_Triangles, float* t)
+	__global struct Triangle* triangles, unsigned int n_Triangles, float* t,
+	__global struct RenderStats* renderStats)
 {
 	bool hit = false;
 	float closestT = INFINITY;
@@ -73,7 +78,9 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 	// test ray with each triangle
 	for (int i = 0; i < n_Triangles; i++)
 	{
-		if (intersectTriangle(ray, &vertices[triangles[i].v0], &vertices[triangles[i].v1], &vertices[triangles[i].v2], &closestT))
+		if (intersectTriangle(ray, &vertices[triangles[i].v0], &vertices[triangles[i].v1],
+			&vertices[triangles[i].v2], &closestT, renderStats
+			))
 			hit = true;
 	}
 
@@ -85,7 +92,7 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	float aspectRatio, float viewportWidth, float viewportHeight,
 	float focalLength, float3 cameraOrigin, float3 upperLeftCorner,
 	__global float3* vertices, __global struct Triangle* triangles,
-	unsigned int n_Triangles, __global struct RenderStats* stats )
+	unsigned int n_Triangles, __global struct RenderStats* renderStats )
 {
 	// calculate pixel coordinates
 	const int workItemID = get_global_id(0);
@@ -95,7 +102,7 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	float fy = (float)y / (float)(imageHeight - 1);
 
 	// generate ray
-	// atomic_inc(&(stats->n_PrimaryRays));
+	atomic_inc(&(renderStats->n_PrimaryRays));
 	struct Ray ray;
 	ray.orig = cameraOrigin;
 	ray.dir = upperLeftCorner;
@@ -107,10 +114,8 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	float t = INFINITY;
 
 	// test ray with scene
-	// atomic_inc(&(stats->n_RayTriangleTests));
-	if (intersect(&ray, vertices, triangles, n_Triangles, &t))
+	if (intersect(&ray, vertices, triangles, n_Triangles, &t, renderStats))
 	{
-		// atomic_inc(&(stats->n_RayTriangleIsects));
 		output[workItemID] = (float3)(1.0f, 0.0f, 0.0f);
 	}
 	else

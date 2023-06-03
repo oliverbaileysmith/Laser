@@ -20,24 +20,24 @@ struct RenderStats
 };
 
 bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
-	float* t, __global struct RenderStats* renderStats)
+	float* t, float3* n, __global struct RenderStats* renderStats)
 {
 	atomic_inc(&(renderStats->n_RayTriangleTests));
 
 	// calculate triangle/plane normal
-	float3 n;
 	float3 v0v1 = v1 - v0;
 	float3 v0v2 = v2 - v0;
-	n = cross(v0v1, v0v2);
+	*n = cross(v0v1, v0v2);
+	*n = normalize(*n);
 
 	// calculate intersection point of ray and the plane in which the triangle lies
-	float D = - dot(n, v0); // distance from origin to plane parallel normal
+	float D = - dot(*n, v0); // distance from origin to plane parallel normal
 
-	float denom = dot(n, ray->dir);
+	float denom = dot(*n, ray->dir);
     if (fabs(denom) < 0.00001f) // test for ray parallel to triangle
         return false;
 
-	*t = -(dot(n, ray->orig) + D) / denom;
+	*t = -(dot(*n, ray->orig) + D) / denom;
 	if (*t < 0.0f) // test if hit point is behind camera
 		return false;
 
@@ -49,19 +49,19 @@ bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
 	float3 edge0 = v1 - v0; // first edge
 	float3 v0p = p - v0;
 	C = cross(edge0, v0p);
-	if (dot(n, C) < 0.0f)
+	if (dot(*n, C) < 0.0f)
 		return false;
 
 	float3 edge1 = v2 - v1; // second edge
 	float3 v1p = p - v1;
 	C = cross(edge1, v1p);
-	if (dot(n, C) < 0.0f)
+	if (dot(*n, C) < 0.0f)
 		return false;
 
 	float3 edge2 = v0 - v2; // third edge
 	float3 v2p = p - v2;
 	C = cross(edge2, v2p);
-	if (dot(n, C) < 0.0f)
+	if (dot(*n, C) < 0.0f)
 		return false;
 
 	atomic_inc(&(renderStats->n_RayTriangleIsects));
@@ -70,7 +70,7 @@ bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
 
 bool intersect(struct Ray* ray, __global float3* vertices,
 	__global struct Triangle* triangles, unsigned int n_Triangles, float* t,
-	__global struct RenderStats* renderStats)
+	float3* n, __global struct RenderStats* renderStats)
 {
 	bool hit = false;
 	float closestT = INFINITY;
@@ -81,7 +81,7 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 		float3 v0 = vertices[triangles[i].v0];
 		float3 v1 = vertices[triangles[i].v1];
 		float3 v2 = vertices[triangles[i].v2];
-		if (intersectTriangle(ray, v0, v1, v2, &closestT, renderStats))
+		if (intersectTriangle(ray, v0, v1, v2, &closestT, n, renderStats))
 			hit = true;
 	}
 
@@ -113,11 +113,12 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	ray.dir = normalize(ray.dir);
 
 	float t = INFINITY;
+	float3 n;
 
 	// test ray with scene
-	if (intersect(&ray, vertices, triangles, n_Triangles, &t, renderStats))
+	if (intersect(&ray, vertices, triangles, n_Triangles, &t, &n, renderStats))
 	{
-		output[workItemID] = (float3)(1.0f, 0.0f, 0.0f);
+		output[workItemID] = max(0.0f, dot(n, -ray.dir));
 	}
 	else
 		output[workItemID] = (float3)(0.0f, 0.0f, 0.0f);

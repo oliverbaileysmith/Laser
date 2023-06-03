@@ -98,18 +98,16 @@ int main()
 	RenderStats stats;
 
 	// Temporary dummy mesh vertices and indices
-	cl_float3 vertices[5];
-	vertices[0] = { -0.5f, -0.5f, -1.0f };
-	vertices[1] = {  0.5f, -0.5f, -1.0f };
-	vertices[2] = {  0.5f,  0.5f, -1.0f };
-	vertices[3] = { -0.5f,  0.5f, -1.0f };
-	vertices[4] = {  0.0f,  0.7f, -1.0f };
+	cl_float3 vertices[4];
+	vertices[0] = {  0.0f,  0.5f, -1.0f };
+	vertices[1] = { -1.0f,  0.0f, -1.0f };
+	vertices[2] = {  0.0f, -0.5f, -1.0f };
+	vertices[3] = {  0.3f,  0.0f, -2.0f };
 
-	unsigned int n_Triangles = 3;
-	Triangle triangles[3];
+	unsigned int n_Triangles = 2;
+	Triangle triangles[2];
 	triangles[0] = { 0, 1, 2 };
 	triangles[1] = { 0, 2, 3 };
-	triangles[2] = { 3, 2, 4 };
 
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));

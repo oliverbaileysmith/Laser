@@ -16,7 +16,7 @@ struct RenderStats
 	cl_uint n_PrimaryRays = 0;
 	cl_uint n_RayTriangleTests = 0;
 	cl_uint n_RayTriangleIsects = 0;
-	cl_float renderTime = 0.0f; // Time in seconds
+	cl_float RenderTime = 0.0f; // Time in seconds
 };
 
 int main()
@@ -98,16 +98,31 @@ int main()
 	RenderStats stats;
 
 	// Temporary dummy mesh vertices and indices
-	cl_float3 vertices[4];
-	vertices[0] = {  0.0f,  0.5f, -1.0f };
-	vertices[1] = { -1.0f,  0.0f, -1.0f };
-	vertices[2] = {  0.0f, -0.5f, -1.0f };
-	vertices[3] = {  0.3f,  0.0f, -2.0f };
+	cl_float3 vertices[8];
+	vertices[0] = { -0.5f, -0.5f,  0.2f }; // front bottom left
+	vertices[1] = { -0.5f, -0.5f, -0.8f }; // back bottom left
+	vertices[2] = { -0.5f,  0.5f,  0.2f }; // front top left
+	vertices[3] = { -0.5f,  0.5f, -0.8f }; // back top left
+	vertices[4] = {  0.5f, -0.5f,  0.2f }; // front bottom right
+	vertices[5] = {  0.5f, -0.5f, -0.8f }; // back bottom right
+	vertices[6] = {  0.5f,  0.5f,  0.2f }; // front top right
+	vertices[7] = {  0.5f,  0.5f, -0.8f }; // back top right
 
-	unsigned int n_Triangles = 2;
-	Triangle triangles[2];
-	triangles[0] = { 0, 1, 2 };
-	triangles[1] = { 0, 2, 3 };
+	unsigned int n_Triangles = 10;
+	Triangle triangles[10];
+	triangles[0] = { 0, 1, 3 }; // left
+	triangles[1] = { 0, 3, 2 };
+	triangles[2] = { 1, 5, 7 }; // back
+	triangles[3] = { 1, 7, 3 };
+	triangles[4] = { 5, 4, 6 }; // right
+	triangles[5] = { 5, 6, 7 };
+	triangles[6] = { 4, 0, 2 }; // front
+	triangles[7] = { 4, 2, 6 };
+	triangles[8] = { 0, 4, 5 }; // bottom
+	triangles[9] = { 0, 5, 1 };
+	//triangles[10] = { 3, 7, 6 }; // top
+	//triangles[11] = { 3, 6, 2 };
+	
 
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
@@ -147,11 +162,11 @@ int main()
 	queue.enqueueReadBuffer(clStats, CL_TRUE, 0, sizeof(RenderStats), &stats);
 
 	clock_t timeEnd = clock();
-	stats.renderTime = (cl_float)(timeEnd - timeStart) / CLOCKS_PER_SEC;
+	stats.RenderTime = (cl_float)(timeEnd - timeStart) / CLOCKS_PER_SEC;
 
 	// Write render stats to console
 	std::cout << std::endl;
-	std::cout << "Render time:                " << stats.renderTime << " seconds" << std::endl;
+	std::cout << "Render time:                " << stats.RenderTime << " seconds" << std::endl;
 	std::cout << "Primary rays:               " << stats.n_PrimaryRays << std::endl;
 	std::cout << "Ray-triangle tests:         " << stats.n_RayTriangleTests << std::endl;
 	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl;

@@ -118,10 +118,10 @@ int main()
 	triangles[5] = { 5, 6, 7 };
 	triangles[6] = { 4, 0, 2 }; // front
 	triangles[7] = { 4, 2, 6 };
-	triangles[8] = { 0, 4, 5 }; // bottom
-	triangles[9] = { 0, 5, 1 };
-	//triangles[10] = { 3, 7, 6 }; // top
-	//triangles[11] = { 3, 6, 2 };
+	triangles[8] = { 3, 7, 6 }; // top
+	triangles[9] = { 3, 6, 2 };
+	//triangles[10] = { 0, 4, 5 }; // bottom
+	//triangles[11] = { 0, 5, 1 };
 	
 
 	// OpenCL device data

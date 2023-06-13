@@ -109,7 +109,7 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 	bool hit = false;
 	float closestT = INFINITY;
 
-	isect->Albedo = (float3)(1.0f,0.0f,1.0f);
+	isect->Albedo = (float3)(0.7f,0.7f,1.0f);
 	isect->Emission = (float3)(0.0f,0.0f,0.0f);
 
 	// test ray with each triangle
@@ -118,6 +118,7 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 		float3 v0 = vertices[triangles[i].v0];
 		float3 v1 = vertices[triangles[i].v1];
 		float3 v2 = vertices[triangles[i].v2];
+
 		if (intersectTriangle(ray, v0, v1, v2, &closestT, n, renderStats))
 		{
 			hit = true;
@@ -127,7 +128,7 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 				*t = closestT;
 				isect->P = ray->orig + *t * ray->dir;
 				isect->N = *n;
-				if (i % 2 == 0)
+				if (i == 8 || i == 9)
 					isect->Emission = (float3)(5.0f,5.0f,5.0f);
 			}
 		}
@@ -135,11 +136,14 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 	return hit;
 }
 
-float3 trace(struct Ray* ray, __global float3* vertices, __global struct Triangle* triangles,
+float3 trace(struct Ray* primaryRay, __global float3* vertices, __global struct Triangle* triangles,
 	unsigned int n_Triangles, __global struct RenderStats* renderStats, unsigned int* seed0, unsigned int* seed1)
 {
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float3 mask = (float3)(1.0f, 1.0f, 1.0f);
+
+	// Create local copy of primary ray for this sample as it will be modified at each depth level
+	struct Ray ray = *primaryRay;
 
 	for (int depth = 0; depth < 8; depth++)
 	{
@@ -148,13 +152,14 @@ float3 trace(struct Ray* ray, __global float3* vertices, __global struct Triangl
 		struct Intersection isect;
 
 		// test ray with scene
-		if (!intersect(ray, vertices, triangles, n_Triangles, &t, &n, &isect, renderStats))
+		if (!intersect(&ray, vertices, triangles, n_Triangles, &t, &n, &isect, renderStats))
 		{
 			// return background color if miss
 			return color += mask * (float3)(0.2f, 0.2f, 0.2f);
 		}
 
 		// modify ray for diffuse reflection
+		/* compute two random numbers to pick a random point on the hemisphere above the hitpoint*/
 		float rand1 = 2.0f * PI * getRandom(seed0, seed1);
 		float rand2 = getRandom(seed0, seed1);
 		float rand2s = sqrt(rand2);
@@ -168,13 +173,13 @@ float3 trace(struct Ray* ray, __global float3* vertices, __global struct Triangl
 		/* use the coordinte frame and random numbers to compute the next ray direction */
 		float3 newDir = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
 
-		ray->orig = isect.P + isect.N * EPSILON;
-		ray->dir = newDir;
+		ray.orig = isect.P + isect.N * EPSILON;
+		ray.dir = newDir;
 
 		// accumulate color
 		color += mask * isect.Emission;
 		mask *= isect.Albedo;
-		mask *= dot(ray->dir, isect.N);
+		mask *= dot(ray.dir, isect.N);
 	}
 	return color;
 }
@@ -186,9 +191,9 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	unsigned int n_Triangles, __global struct RenderStats* renderStats)
 {
 	// calculate pixel coordinates
-	const int workItemID = get_global_id(0);
-	int x = workItemID % imageWidth;
-	int y = workItemID / imageWidth;
+	const unsigned int workItemID = get_global_id(0);
+	unsigned int x = workItemID % imageWidth;
+	unsigned int y = workItemID / imageWidth;
 	float fx = (float)x / (float)(imageWidth - 1);
 	float fy = (float)y / (float)(imageHeight - 1);
 
@@ -196,21 +201,20 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	unsigned int seed0 = x;
 	unsigned int seed1 = y;
 
-	// generate ray
+	// generate primary ray
 	atomic_inc(&(renderStats->n_PrimaryRays));
-	struct Ray ray;
-	ray.orig = cameraOrigin;
-	ray.dir = upperLeftCorner;
-	ray.dir.x += fx * viewportWidth;
-	ray.dir.y -= fy * viewportHeight;
-	ray.dir -= cameraOrigin;
-	ray.dir = normalize(ray.dir);
+	struct Ray primaryRay;
+	primaryRay.orig = cameraOrigin;
+	primaryRay.dir = upperLeftCorner;
+	primaryRay.dir.x += fx * viewportWidth;
+	primaryRay.dir.y -= fy * viewportHeight;
+	primaryRay.dir -= cameraOrigin;
+	primaryRay.dir = normalize(primaryRay.dir);
 
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float invSamples = 1.0f / SAMPLES;
 
 	for (int i = 0; i < SAMPLES; i++)
-		color += trace(&ray, vertices, triangles, n_Triangles, renderStats, &seed0, &seed1) * invSamples;
-
+		color += trace(&primaryRay, vertices, triangles, n_Triangles, renderStats, &seed0, &seed1) * invSamples;
 	output[workItemID] = color;
 }

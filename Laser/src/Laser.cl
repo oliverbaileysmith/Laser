@@ -109,7 +109,7 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 	bool hit = false;
 	float closestT = INFINITY;
 
-	isect->Albedo = (float3)(0.7f,0.7f,1.0f);
+	isect->Albedo = (float3)(0.9f, 0.8f, 0.7f);
 	isect->Emission = (float3)(0.0f,0.0f,0.0f);
 
 	// test ray with each triangle
@@ -129,7 +129,10 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 				isect->P = ray->orig + *t * ray->dir;
 				isect->N = *n;
 				if (i == 8 || i == 9)
-					isect->Emission = (float3)(5.0f,5.0f,5.0f);
+				{
+					isect->Emission = (float3)(1.0f,1.0f,1.0f);
+					isect->Albedo = (float3)(0.0f,0.0f,0.0f);
+				}
 			}
 		}
 	}

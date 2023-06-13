@@ -108,8 +108,8 @@ int main()
 	vertices[6] = {  0.5f,  0.5f,  0.2f }; // front top right
 	vertices[7] = {  0.5f,  0.5f, -0.8f }; // back top right
 
-	unsigned int n_Triangles = 10;
-	Triangle triangles[10];
+	unsigned int n_Triangles = 12;
+	Triangle triangles[12];
 	triangles[0] = { 0, 1, 3 }; // left
 	triangles[1] = { 0, 3, 2 };
 	triangles[2] = { 1, 5, 7 }; // back
@@ -120,8 +120,8 @@ int main()
 	triangles[7] = { 4, 2, 6 };
 	triangles[8] = { 3, 7, 6 }; // top
 	triangles[9] = { 3, 6, 2 };
-	//triangles[10] = { 0, 4, 5 }; // bottom
-	//triangles[11] = { 0, 5, 1 };
+	triangles[10] = { 0, 4, 5 }; // bottom
+	triangles[11] = { 0, 5, 1 };
 	
 
 	// OpenCL device data

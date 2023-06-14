@@ -91,7 +91,13 @@
     <ClCompile Include="src\Laser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\Laser.cl" />
+    <None Include="cl\Intersection.cl" />
+    <None Include="cl\Random.cl" />
+    <None Include="cl\Ray.cl" />
+    <None Include="cl\RenderStats.cl" />
+    <None Include="cl\Triangle.cl" />
+    <None Include="cl\Laser.cl" />
+    <None Include="cl\Material.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

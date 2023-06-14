@@ -63,7 +63,7 @@ int main()
 	// OpenCL kernel source
 	std::string kernelSrc;
 	std::string line;
-	std::ifstream kernelFile("src/Laser.cl");
+	std::ifstream kernelFile("cl/Laser.cl");
 
 	while (std::getline(kernelFile, line))
 	{
@@ -75,7 +75,7 @@ int main()
 	// OpenCL program
 	cl::Program program(context, kernelSrc.c_str());
 
-	cl_int buildError = program.build({ device }, "");
+	cl_int buildError = program.build({ device }, "-I cl");
 	if (buildError)
 	{
 		std::cout << std::endl << "OpenCL program compilation error: " << buildError << std::endl;

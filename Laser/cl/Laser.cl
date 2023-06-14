@@ -2,112 +2,12 @@ __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
 __constant int SAMPLES = 128;
 
-struct Ray
-{
-	float3 orig;
-	float3 dir;
-};
-
-struct Triangle
-{
-	unsigned int v0;
-	unsigned int v1;
-	unsigned int v2;
-	unsigned int MaterialIndex;
-};
-
-struct Material
-{
-	float3 Albedo;
-	float3 Emission;
-};
-
-struct RenderStats
-{
-	unsigned int n_PrimaryRays;
-	unsigned int n_RayTriangleTests;
-	unsigned int n_RayTriangleIsects;
-	float RenderTime;
-};
-
-struct Intersection
-{
-	float3 P;
-	float3 N;
-	float3 Albedo;
-	float3 Emission;
-};
-
-// from https://github.com/straaljager/OpenCL-path-tracing-tutorial-2-Part-2-Path-tracing-spheres/blob/master/opencl_kernel.cl
-static float getRandom(unsigned int *seed0, unsigned int *seed1)
-{
-
-	/* hash the seeds using bitwise AND operations and bitshifts */
-	*seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);  
-	*seed1 = 18000 * ((*seed1) & 65535) + ((*seed1) >> 16);
-
-	unsigned int ires = ((*seed0) << 16) + (*seed1);
-
-	/* use union struct to convert int to float */
-	union {
-		float f;
-		unsigned int ui;
-	} res;
-
-	res.ui = (ires & 0x007fffff) | 0x40000000;  /* bitwise AND, bitwise OR */
-	return (res.f - 2.0f) / 2.0f;
-}
-
-bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
-	float* t, float3* n, __global struct RenderStats* renderStats)
-{
-	//atomic_inc(&(renderStats->n_RayTriangleTests));
-
-	// calculate triangle/plane normal
-	float3 v0v1 = v1 - v0;
-	float3 v0v2 = v2 - v0;
-	float3 normal = cross(v0v1, v0v2);
-	normal = normalize(normal);
-
-	// calculate intersection point of ray and the plane in which the triangle lies
-	float D = - dot(normal, v0); // distance from origin to plane parallel normal
-
-	float denom = dot(normal, ray->dir);
-    if (fabs(denom) < EPSILON) // test for ray parallel to triangle
-        return false;
-
-	*t = -(dot(normal, ray->orig) + D) / denom;
-	if (*t < 0.0f) // test if hit point is behind camera
-		return false;
-
-	float3 p = ray->orig + *t * ray->dir; // intersection point
-
-	// check if intersection point is inside triangle
-	float3 C;
-	
-	float3 edge0 = v1 - v0; // first edge
-	float3 v0p = p - v0;
-	C = cross(edge0, v0p);
-	if (dot(normal, C) < 0.0f)
-		return false;
-
-	float3 edge1 = v2 - v1; // second edge
-	float3 v1p = p - v1;
-	C = cross(edge1, v1p);
-	if (dot(normal, C) < 0.0f)
-		return false;
-	
-
-	float3 edge2 = v0 - v2; // third edge
-	float3 v2p = p - v2;
-	C = cross(edge2, v2p);
-	if (dot(normal, C) < 0.0f)
-		return false;
-	
-	*n = normal;
-	//atomic_inc(&(renderStats->n_RayTriangleIsects));
-	return true;
-}
+#include "Ray.cl"
+#include "Triangle.cl"
+#include "Material.cl"
+#include "Intersection.cl"
+#include "RenderStats.cl"
+#include "Random.cl"
 
 bool intersect(struct Ray* ray, __global float3* vertices,
 	__global struct Triangle* triangles, unsigned int n_Triangles,

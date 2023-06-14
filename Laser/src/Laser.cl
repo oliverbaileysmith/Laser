@@ -13,6 +13,13 @@ struct Triangle
 	unsigned int v0;
 	unsigned int v1;
 	unsigned int v2;
+	unsigned int MaterialIndex;
+};
+
+struct Material
+{
+	float3 Albedo;
+	float3 Emission;
 };
 
 struct RenderStats
@@ -54,7 +61,7 @@ static float getRandom(unsigned int *seed0, unsigned int *seed1)
 bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
 	float* t, float3* n, __global struct RenderStats* renderStats)
 {
-	atomic_inc(&(renderStats->n_RayTriangleTests));
+	//atomic_inc(&(renderStats->n_RayTriangleTests));
 
 	// calculate triangle/plane normal
 	float3 v0v1 = v1 - v0;
@@ -98,19 +105,17 @@ bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
 		return false;
 	
 	*n = normal;
-	atomic_inc(&(renderStats->n_RayTriangleIsects));
+	//atomic_inc(&(renderStats->n_RayTriangleIsects));
 	return true;
 }
 
 bool intersect(struct Ray* ray, __global float3* vertices,
-	__global struct Triangle* triangles, unsigned int n_Triangles, float* t,
-	float3* n, struct Intersection* isect, __global struct RenderStats* renderStats)
+	__global struct Triangle* triangles, unsigned int n_Triangles,
+	__global struct Material* materials, float* t,	float3* n,
+	struct Intersection* isect, __global struct RenderStats* renderStats)
 {
 	bool hit = false;
 	float closestT = INFINITY;
-
-	isect->Albedo = (float3)(0.9f, 0.8f, 0.7f);
-	isect->Emission = (float3)(0.0f,0.0f,0.0f);
 
 	// test ray with each triangle
 	for (int i = 0; i < n_Triangles; i++)
@@ -128,11 +133,8 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 				*t = closestT;
 				isect->P = ray->orig + *t * ray->dir;
 				isect->N = *n;
-				if (i == 8 || i == 9)
-				{
-					isect->Emission = (float3)(1.0f,1.0f,1.0f);
-					isect->Albedo = (float3)(0.0f,0.0f,0.0f);
-				}
+				isect->Albedo = materials[triangles[i].MaterialIndex].Albedo;
+				isect->Emission = materials[triangles[i].MaterialIndex].Emission;
 			}
 		}
 	}
@@ -140,7 +142,8 @@ bool intersect(struct Ray* ray, __global float3* vertices,
 }
 
 float3 trace(struct Ray* primaryRay, __global float3* vertices, __global struct Triangle* triangles,
-	unsigned int n_Triangles, __global struct RenderStats* renderStats, unsigned int* seed0, unsigned int* seed1)
+	unsigned int n_Triangles, __global struct Material* materials, __global struct RenderStats* renderStats,
+	unsigned int* seed0, unsigned int* seed1)
 {
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float3 mask = (float3)(1.0f, 1.0f, 1.0f);
@@ -155,7 +158,7 @@ float3 trace(struct Ray* primaryRay, __global float3* vertices, __global struct 
 		struct Intersection isect;
 
 		// test ray with scene
-		if (!intersect(&ray, vertices, triangles, n_Triangles, &t, &n, &isect, renderStats))
+		if (!intersect(&ray, vertices, triangles, n_Triangles, materials, &t, &n, &isect, renderStats))
 		{
 			// return background color if miss
 			return color += mask * (float3)(0.2f, 0.2f, 0.2f);
@@ -191,7 +194,8 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	float aspectRatio, float viewportWidth, float viewportHeight,
 	float focalLength, float3 cameraOrigin, float3 upperLeftCorner,
 	__global float3* vertices, __global struct Triangle* triangles,
-	unsigned int n_Triangles, __global struct RenderStats* renderStats)
+	unsigned int n_Triangles, __global struct Material* materials,
+	__global struct RenderStats* renderStats)
 {
 	// calculate pixel coordinates
 	const unsigned int workItemID = get_global_id(0);
@@ -205,7 +209,7 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	unsigned int seed1 = y;
 
 	// generate primary ray
-	atomic_inc(&(renderStats->n_PrimaryRays));
+	//atomic_inc(&(renderStats->n_PrimaryRays));
 	struct Ray primaryRay;
 	primaryRay.orig = cameraOrigin;
 	primaryRay.dir = upperLeftCorner;
@@ -218,6 +222,6 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	float invSamples = 1.0f / SAMPLES;
 
 	for (int i = 0; i < SAMPLES; i++)
-		color += trace(&primaryRay, vertices, triangles, n_Triangles, renderStats, &seed0, &seed1) * invSamples;
+		color += trace(&primaryRay, vertices, triangles, n_Triangles, materials, renderStats, &seed0, &seed1) * invSamples;
 	output[workItemID] = color;
 }

@@ -4,27 +4,9 @@
 
 #include <CL/cl.hpp>
 
-struct Triangle
-{
-	cl_uint v0;
-	cl_uint v1;
-	cl_uint v2;
-	cl_uint MaterialIndex;
-};
-
-struct Material
-{
-	cl_float3 Albedo;
-	cl_float3 Emission;
-};
-
-struct RenderStats
-{
-	cl_uint n_PrimaryRays = 0;
-	cl_uint n_RayTriangleTests = 0;
-	cl_uint n_RayTriangleIsects = 0;
-	cl_float RenderTime = 0.0f; // Time in seconds
-};
+#include "Triangle.h"
+#include "Material.h"
+#include "RenderStats.h"
 
 int main()
 {

@@ -5,6 +5,7 @@
 #include <CL/cl.hpp>
 
 #include "Triangle.h"
+#include "TriangleMesh.h"
 #include "Material.h"
 #include "RenderStats.h"
 #include "Image.h"
@@ -88,38 +89,8 @@ int main()
 
 	RenderStats stats;
 
-	// Temporary dummy mesh vertices and indices
-	cl_float3 vertices[12];
-	vertices[0]  = { -0.5f, -0.5f,  0.2f }; // front bottom left
-	vertices[1]  = { -0.5f, -0.5f, -0.8f }; // back bottom left
-	vertices[2]  = { -0.5f,  0.5f,  0.2f }; // front top left
-	vertices[3]  = { -0.5f,  0.5f, -0.8f }; // back top left
-	vertices[4]  = {  0.5f, -0.5f,  0.2f }; // front bottom right
-	vertices[5]  = {  0.5f, -0.5f, -0.8f }; // back bottom right
-	vertices[6]  = {  0.5f,  0.5f,  0.2f }; // front top right
-	vertices[7]  = {  0.5f,  0.5f, -0.8f }; // back top right
-	vertices[8]  = { -0.3f,  0.499f, -0.6f }; // light back left
-	vertices[9]  = {  0.3f,  0.499f, -0.6f }; // light back right
-	vertices[10] = {  0.3f,  0.499f,  0.0f }; // light front right
-	vertices[11] = { -0.3f,  0.499f,  0.0f }; // light front left
-
-
-	unsigned int n_Triangles = 14;
-	Triangle triangles[14];
-	triangles[0] = { 0, 1, 3, 1 }; // left
-	triangles[1] = { 0, 3, 2, 1 };
-	triangles[2] = { 1, 5, 7, 0 }; // back
-	triangles[3] = { 1, 7, 3, 0 };
-	triangles[4] = { 5, 4, 6, 2 }; // right
-	triangles[5] = { 5, 6, 7, 2 };
-	triangles[6] = { 4, 0, 2, 0 }; // front
-	triangles[7] = { 4, 2, 6, 0 };
-	triangles[8] = { 3, 7, 6, 0 }; // top
-	triangles[9] = { 3, 6, 2, 0 };
-	triangles[10] = { 0, 4, 5, 0 }; // bottom
-	triangles[11] = { 0, 5, 1, 0 };
-	triangles[12] = { 8, 9, 10, 3 }; // light
-	triangles[13] = { 8, 10, 11, 3 };
+	TriangleMesh mesh;
+	int n_Triangles = mesh.GetTrianglesPtr()->size();
 	
 	Material materials[4];
 	materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f} }; // white
@@ -130,9 +101,10 @@ int main()
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
 	cl::Buffer clStats(context, CL_MEM_READ_WRITE, sizeof(RenderStats));
-	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, sizeof(vertices));
-	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, sizeof(triangles));
+	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, mesh.GetVerticesPtr()->size() * sizeof(cl_float3));
+	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, mesh.GetTrianglesPtr()->size() * sizeof(Triangle));
 	cl::Buffer clMaterials(context, CL_MEM_READ_ONLY, sizeof(materials));
+
 
 	// OpenCL kernel arguments
 	kernel.setArg(0, clOutput);
@@ -160,8 +132,8 @@ int main()
 	clock_t timeStart = clock();
 
 	// Queue kernel execution and read result from device buffer
-	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, sizeof(vertices), &vertices);
-	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, sizeof(triangles), &triangles);
+	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, mesh.GetVerticesPtr()->size() * sizeof(cl_float3), mesh.GetVerticesPtr()->data());
+	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, mesh.GetTrianglesPtr()->size() * sizeof(Triangle), mesh.GetTrianglesPtr()->data());
 	queue.enqueueWriteBuffer(clMaterials, CL_TRUE, 0, sizeof(materials), &materials);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
 	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), (void*)image.GetPixelsPtr());

@@ -90,6 +90,7 @@
   <ItemGroup>
     <ClCompile Include="src\Image.cpp" />
     <ClCompile Include="src\Laser.cpp" />
+    <ClCompile Include="src\TriangleMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cl\Intersection.cl" />
@@ -105,6 +106,7 @@
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\RenderStats.h" />
     <ClInclude Include="src\Triangle.h" />
+    <ClInclude Include="src\TriangleMesh.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

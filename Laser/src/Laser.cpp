@@ -7,6 +7,7 @@
 #include "Triangle.h"
 #include "Material.h"
 #include "RenderStats.h"
+#include "Image.h"
 
 int main()
 {
@@ -70,6 +71,7 @@ int main()
 	cl::Kernel kernel(program, "Laser");
 
 	// Host data
+	Image image(1280, 720, Image::Format::ppm);
 	const cl_int imageWidth = 1280;
 	const cl_int imageHeight = 720;
 	const cl_float aspectRatio = (cl_float)imageWidth / (cl_float)imageHeight;
@@ -162,7 +164,7 @@ int main()
 	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, sizeof(triangles), &triangles);
 	queue.enqueueWriteBuffer(clMaterials, CL_TRUE, 0, sizeof(materials), &materials);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
-	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), cpuOutput);
+	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), image.m_Pixels.data());
 	queue.enqueueReadBuffer(clStats, CL_TRUE, 0, sizeof(RenderStats), &stats);
 
 	clock_t timeEnd = clock();
@@ -188,9 +190,9 @@ int main()
 	for (int i = 0; i < imageWidth * imageHeight; i++)
 	{
 		outputFile
-			<< (int32_t)(cpuOutput[i].x * 255) << " "
-			<< (int32_t)(cpuOutput[i].y * 255) << " "
-			<< (int32_t)(cpuOutput[i].z * 255) << std::endl;
+			<< (int32_t)(image.m_Pixels[i].x * 255) << " "
+			<< (int32_t)(image.m_Pixels[i].y * 255) << " "
+			<< (int32_t)(image.m_Pixels[i].z * 255) << std::endl;
 	}
 	outputFile.close();
 	std::cout << "Finished writing to file." << std::endl;

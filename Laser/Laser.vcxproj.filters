@@ -18,6 +18,9 @@
     <ClCompile Include="src\Laser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="cl\Laser.cl" />
@@ -38,7 +41,7 @@
     <ClInclude Include="src\RenderStats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Camera.h">
+    <ClInclude Include="src\Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -88,6 +88,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Image.cpp" />
     <ClCompile Include="src\Laser.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -100,7 +101,7 @@
     <None Include="cl\Material.cl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\Image.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\RenderStats.h" />
     <ClInclude Include="src\Triangle.h" />

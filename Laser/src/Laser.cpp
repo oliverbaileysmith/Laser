@@ -164,7 +164,7 @@ int main()
 	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, sizeof(triangles), &triangles);
 	queue.enqueueWriteBuffer(clMaterials, CL_TRUE, 0, sizeof(materials), &materials);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
-	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), image.m_Pixels.data());
+	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), (void*)image.GetPixelsPtr());
 	queue.enqueueReadBuffer(clStats, CL_TRUE, 0, sizeof(RenderStats), &stats);
 
 	clock_t timeEnd = clock();
@@ -177,25 +177,7 @@ int main()
 	std::cout << "Ray-triangle tests:         " << stats.n_RayTriangleTests << std::endl;
 	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl;
 
-	// Write image to .ppm file
-	std::string outputPath = "output.ppm";
-	std::cout << std::endl << "Writing to file \"" << outputPath << "\"..." << std::endl;
-	std::ofstream outputFile;
-	outputFile.open(outputPath);
-
-	outputFile << "P3" << std::endl;
-	outputFile << imageWidth << " " << imageHeight << std::endl;
-	outputFile << "255" << std::endl;
-
-	for (int i = 0; i < imageWidth * imageHeight; i++)
-	{
-		outputFile
-			<< (int32_t)(image.m_Pixels[i].x * 255) << " "
-			<< (int32_t)(image.m_Pixels[i].y * 255) << " "
-			<< (int32_t)(image.m_Pixels[i].z * 255) << std::endl;
-	}
-	outputFile.close();
-	std::cout << "Finished writing to file." << std::endl;
+	image.WriteToFile("output.ppm");
 
 	delete[] cpuOutput;
 }

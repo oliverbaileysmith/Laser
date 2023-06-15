@@ -18,6 +18,8 @@ public:
 	const cl_float3* GetPixelsPtr() const;
 
 private:
+	inline cl_float clamp(cl_float x) const { return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x; }
+
 	Format m_Format;
 	const cl_uint m_Width;
 	const cl_uint m_Height;

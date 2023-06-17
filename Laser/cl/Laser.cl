@@ -1,6 +1,6 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant int SAMPLES = 128;
+__constant int SAMPLES = 64;
 
 #include "Ray.cl"
 #include "Triangle.cl"
@@ -51,7 +51,7 @@ float3 trace(struct Ray* primaryRay, __global float3* vertices, __global struct 
 	// Create local copy of primary ray for this sample as it will be modified at each depth level
 	struct Ray ray = *primaryRay;
 
-	for (int depth = 0; depth < 8; depth++)
+	for (int depth = 0; depth < 4; depth++)
 	{
 		float t = INFINITY;
 		float3 n;

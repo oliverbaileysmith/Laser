@@ -6,6 +6,7 @@
 
 #include "Triangle.h"
 #include "TriangleMesh.h"
+#include "ModelLoader.h"
 #include "Material.h"
 #include "RenderStats.h"
 #include "Image.h"
@@ -72,39 +73,43 @@ int main()
 	cl::Kernel kernel(program, "Laser");
 
 	// Host data
-	Image image(1280, 720, Image::Format::ppm);
-	const cl_int imageWidth = 1280;
-	const cl_int imageHeight = 720;
+	const cl_int imageWidth = 600;
+	const cl_int imageHeight = 600;
 	const cl_float aspectRatio = (cl_float)imageWidth / (cl_float)imageHeight;
+	Image image(imageWidth, imageHeight, Image::Format::ppm);
+
 	cl_float viewportHeight = 2.0f;
 	cl_float viewportWidth = viewportHeight * aspectRatio;
 	cl_float focalLength = 1.0f;
-	cl_float3 cameraOrigin = { 0.0f,0.0f,0.0f };
+	cl_float3 cameraOrigin = { 0.0f,0.0f,1.0f };
 	cl_float3 upperLeftCorner = cameraOrigin;
 	upperLeftCorner.x -= viewportWidth / 2.0f;
 	upperLeftCorner.y += viewportHeight / 2.0f;
 	upperLeftCorner.z -= focalLength;
 
-	cl_float3* cpuOutput = new cl_float3[imageWidth * imageHeight];
-
 	RenderStats stats;
 
-	TriangleMesh mesh;
-	int n_Triangles = mesh.GetTrianglesPtr()->size();
+	ModelLoader loader;
+	std::vector<TriangleMesh> meshes = loader.LoadModel("res/models/utah-teapot.obj");
+	if (meshes.empty())
+	{
+		std::cout << "No valid models were loaded, terminating program!" << std::endl;
+		return -1;
+	}
+	int n_Triangles = meshes[0].GetTrianglesPtr()->size();
 	
 	Material materials[4];
 	materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f} }; // white
 	materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // red
 	materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // green
-	materials[3] = { {0.0f, 0.0f, 0.0f}, {3.0f, 3.0f, 3.0f} }; // light
+	materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
 	// OpenCL device data
 	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
 	cl::Buffer clStats(context, CL_MEM_READ_WRITE, sizeof(RenderStats));
-	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, mesh.GetVerticesPtr()->size() * sizeof(cl_float3));
-	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, mesh.GetTrianglesPtr()->size() * sizeof(Triangle));
+	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3));
+	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle));
 	cl::Buffer clMaterials(context, CL_MEM_READ_ONLY, sizeof(materials));
-
 
 	// OpenCL kernel arguments
 	kernel.setArg(0, clOutput);
@@ -132,8 +137,8 @@ int main()
 	clock_t timeStart = clock();
 
 	// Queue kernel execution and read result from device buffer
-	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, mesh.GetVerticesPtr()->size() * sizeof(cl_float3), mesh.GetVerticesPtr()->data());
-	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, mesh.GetTrianglesPtr()->size() * sizeof(Triangle), mesh.GetTrianglesPtr()->data());
+	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), meshes[0].GetVerticesPtr()->data());
+	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), meshes[0].GetTrianglesPtr()->data());
 	queue.enqueueWriteBuffer(clMaterials, CL_TRUE, 0, sizeof(materials), &materials);
 	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
 	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), (void*)image.GetPixelsPtr());
@@ -150,6 +155,4 @@ int main()
 	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl;
 
 	image.WriteToFile("output.ppm");
-
-	delete[] cpuOutput;
 }

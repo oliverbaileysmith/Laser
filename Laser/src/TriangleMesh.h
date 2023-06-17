@@ -9,7 +9,7 @@
 class TriangleMesh
 {
 public:
-	TriangleMesh();
+	TriangleMesh(std::vector<cl_float3> vertices, std::vector<Triangle> triangles);
 
 	const std::vector<cl_float3>* const GetVerticesPtr() const;
 	const std::vector<Triangle>* const GetTrianglesPtr() const;

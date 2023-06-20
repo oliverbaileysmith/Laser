@@ -10,9 +10,9 @@ Image::Image(cl_uint width, cl_uint height, Format format)
 	m_Pixels.resize(m_Width * m_Height);
 }
 
-void Image::WriteToFile(std::string filepath) const
+bool Image::WriteToFile(const std::string& filepath) const
 {
-	std::cout << std::endl << "Writing to file \"" << filepath << "\"..." << std::endl;
+	std::cout << "Writing to file \"" << filepath << "\"..." << std::endl;
 
 	// Open file and ensure it was successfully created
 	FILE* outputFile = nullptr;
@@ -20,7 +20,7 @@ void Image::WriteToFile(std::string filepath) const
 	if (!outputFile)
 	{
 		std::cout << "Failed to open file " << filepath << "." << std::endl;
-		return;
+		return false;
 	}
 
 	switch (m_Format)
@@ -41,6 +41,7 @@ void Image::WriteToFile(std::string filepath) const
 	
 	fclose(outputFile);
 	std::cout << "Finished writing to file." << std::endl;
+	return true;
 }
 
 const cl_float3* Image::GetPixelsPtr() const

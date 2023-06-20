@@ -4,6 +4,7 @@
 
 #include <CL/cl.hpp>
 
+#include "OpenCLContext.h"
 #include "Triangle.h"
 #include "TriangleMesh.h"
 #include "ModelLoader.h"
@@ -13,64 +14,11 @@
 
 int main()
 {
-	// OpenCL platform
-	std::vector<cl::Platform> platforms;
-	cl::Platform::get(&platforms);
+	OpenCLContext ocl;
 
-	if (platforms.empty())
-	{
-		std::cout << "No OpenCL platform available." << std::endl;
-		return -1;
-	}
+	if (!ocl.Init()) return -1;
 
-	cl::Platform platform = platforms[0];
-
-	// OpenCL device
-	std::vector<cl::Device> devices;
-	platform.getDevices(CL_DEVICE_TYPE_GPU, &devices);
-
-	if (devices.empty())
-	{
-		std::cout << "No OpenCL GPU device available." << std::endl;
-		return -1;
-	}
-
-	cl::Device device = devices[0];
-
-	// Print OpenCL platform and device info
-	std::cout << "OpenCL platform: " << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
-	std::cout << "OpenCL device: " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
-	std::cout << "OpenCL version: " << device.getInfo<CL_DEVICE_VERSION>() << std::endl;
-
-	// OpenCL context
-	cl::Context context(device);
-
-	// OpenCL kernel source
-	std::string kernelSrc;
-	std::string line;
-	std::ifstream kernelFile("cl/Laser.cl");
-
-	while (std::getline(kernelFile, line))
-	{
-		kernelSrc += line + '\n';
-	}
-
-	kernelFile.close();
-
-	// OpenCL program
-	cl::Program program(context, kernelSrc.c_str());
-
-	cl_int buildError = program.build({ device }, "-I cl");
-	if (buildError)
-	{
-		std::cout << std::endl << "OpenCL program compilation error: " << buildError << std::endl;
-		std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
-		std::cout << "Build log:" << std::endl << buildLog << std::endl;
-		return -1;
-	}
-
-	// OpenCL kernel
-	cl::Kernel kernel(program, "Laser");
+	if (!ocl.LoadKernel("cl/Laser.cl", "Laser")) return -1;
 
 	// Host data
 	const cl_int imageWidth = 600;
@@ -105,30 +53,27 @@ int main()
 	materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
 	// OpenCL device data
-	cl::Buffer clOutput(context, CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3));
-	cl::Buffer clStats(context, CL_MEM_READ_WRITE, sizeof(RenderStats));
-	cl::Buffer clVertices(context, CL_MEM_READ_ONLY, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3));
-	cl::Buffer clTriangles(context, CL_MEM_READ_ONLY, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle));
-	cl::Buffer clMaterials(context, CL_MEM_READ_ONLY, sizeof(materials));
+	if (!ocl.AddBuffer("output", CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3))) return -1;
+	if (!ocl.AddBuffer("vertices", CL_MEM_READ_ONLY, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3))) return -1;
+	if (!ocl.AddBuffer("triangles", CL_MEM_READ_ONLY, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle))) return -1;
+	if (!ocl.AddBuffer("materials", CL_MEM_READ_ONLY, sizeof(materials))) return -1;
+	if (!ocl.AddBuffer("stats", CL_MEM_READ_WRITE, sizeof(RenderStats))) return -1;
 
 	// OpenCL kernel arguments
-	kernel.setArg(0, clOutput);
-	kernel.setArg(1, imageWidth);
-	kernel.setArg(2, imageHeight);
-	kernel.setArg(3, aspectRatio);
-	kernel.setArg(4, viewportWidth);
-	kernel.setArg(5, viewportHeight);
-	kernel.setArg(6, focalLength);
-	kernel.setArg(7, cameraOrigin);
-	kernel.setArg(8, upperLeftCorner);
-	kernel.setArg(9, clVertices);
-	kernel.setArg(10, clTriangles);
-	kernel.setArg(11, n_Triangles);
-	kernel.setArg(12, clMaterials);
-	kernel.setArg(13, clStats);
-
-	// OpenCL command queue
-	cl::CommandQueue queue(context, device);
+	if (!ocl.SetKernelArg(0, "output")) return -1;
+	if (!ocl.SetKernelArg(1, imageWidth)) return -1;
+	if (!ocl.SetKernelArg(2, imageHeight)) return -1;
+	if (!ocl.SetKernelArg(3, aspectRatio)) return -1;
+	if (!ocl.SetKernelArg(4, viewportWidth)) return -1;
+	if (!ocl.SetKernelArg(5, viewportHeight)) return -1;
+	if (!ocl.SetKernelArg(6, focalLength)) return -1;
+	if (!ocl.SetKernelArg(7, cameraOrigin)) return -1;
+	if (!ocl.SetKernelArg(8, upperLeftCorner)) return -1;
+	if (!ocl.SetKernelArg(9, "vertices")) return -1;
+	if (!ocl.SetKernelArg(10, "triangles")) return -1;
+	if (!ocl.SetKernelArg(11, n_Triangles)) return -1;
+	if (!ocl.SetKernelArg(12, "materials")) return -1;
+	if (!ocl.SetKernelArg(13, "stats")) return -1;
 
 	// OpenCL work items
 	std::size_t globalWorkSize = imageWidth * imageHeight;
@@ -137,22 +82,22 @@ int main()
 	clock_t timeStart = clock();
 
 	// Queue kernel execution and read result from device buffer
-	queue.enqueueWriteBuffer(clVertices, CL_TRUE, 0, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), meshes[0].GetVerticesPtr()->data());
-	queue.enqueueWriteBuffer(clTriangles, CL_TRUE, 0, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), meshes[0].GetTrianglesPtr()->data());
-	queue.enqueueWriteBuffer(clMaterials, CL_TRUE, 0, sizeof(materials), &materials);
-	queue.enqueueNDRangeKernel(kernel, NULL, globalWorkSize, localWorkSize);
-	queue.enqueueReadBuffer(clOutput, CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), (void*)image.GetPixelsPtr());
-	queue.enqueueReadBuffer(clStats, CL_TRUE, 0, sizeof(RenderStats), &stats);
+	if (!ocl.QueueWrite("vertices", CL_TRUE, 0, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), meshes[0].GetVerticesPtr()->data())) return -1;
+	if (!ocl.QueueWrite("triangles", CL_TRUE, 0, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), meshes[0].GetTrianglesPtr()->data())) return -1;
+	if (!ocl.QueueWrite("materials", CL_TRUE, 0, sizeof(materials), &materials)) return -1;
+	if (!ocl.QueueKernel(NULL, globalWorkSize, localWorkSize)) return -1;
+	if (!ocl.QueueRead("output", CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), (void*)image.GetPixelsPtr())) return -1;
+	if (!ocl.QueueRead("stats", CL_TRUE, 0, sizeof(RenderStats), &stats)) return -1;
 
 	clock_t timeEnd = clock();
 	stats.RenderTime = (cl_float)(timeEnd - timeStart) / CLOCKS_PER_SEC;
 
 	// Write render stats to console
-	std::cout << std::endl;
 	std::cout << "Render time:                " << stats.RenderTime << " seconds" << std::endl;
 	std::cout << "Primary rays:               " << stats.n_PrimaryRays << std::endl;
 	std::cout << "Ray-triangle tests:         " << stats.n_RayTriangleTests << std::endl;
-	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl;
+	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl << std::endl;
 
-	image.WriteToFile("output.ppm");
+	if (!image.WriteToFile("output.ppm")) return -1;
+	return 0;
 }

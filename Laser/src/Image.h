@@ -14,7 +14,7 @@ public:
 
 	Image(cl_uint width, cl_uint height, Format format);
 
-	void WriteToFile(std::string filepath) const;
+	bool WriteToFile(const std::string& filepath) const;
 	const cl_float3* GetPixelsPtr() const;
 
 private:

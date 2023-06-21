@@ -7,10 +7,10 @@ Image::Image(cl_uint width, cl_uint height, Format format)
 	: m_Width(width), m_Height(height), m_Format(format),
 		m_AspectRatio((cl_float)m_Width/(cl_float)m_Height)
 {
-	m_Pixels.resize(m_Width * m_Height);
+	m_Pixels.reserve(m_Height / 64);
 }
 
-bool Image::WriteToFile(const std::string& filepath) const
+bool Image::WriteToFile(const std::string& filepath, cl_uint rowsPerExec) const
 {
 	std::cout << "Writing to file \"" << filepath << "\"..." << std::endl;
 
@@ -30,21 +30,22 @@ bool Image::WriteToFile(const std::string& filepath) const
 			fprintf(outputFile, "P3\n%d %d\n%d\n", m_Width, m_Height, 255);
 
 			// Convert each pixel's RGB values from [0.0f, 1.0f] to [0, 255] and write to file
-			for (int i = 0; i < m_Width * m_Height; i++)
+			int counter = 0;
+			for (int j = 0; j < (float)m_Height / (float)rowsPerExec; j++)
 			{
-				fprintf(outputFile, "%d %d %d ",
-					(cl_int)(clamp(m_Pixels[i].x) * 255),
-					(cl_int)(clamp(m_Pixels[i].y) * 255),
-					(cl_int)(clamp(m_Pixels[i].z) * 255));
+				for (int i = 0; i < m_Width * rowsPerExec; i++)
+				{
+					if (counter == m_Width * m_Height) break;
+					fprintf(outputFile, "%d %d %d ",
+						(cl_int)(clamp(m_Pixels[j][i].x) * 255),
+						(cl_int)(clamp(m_Pixels[j][i].y) * 255),
+						(cl_int)(clamp(m_Pixels[j][i].z) * 255));
+					counter++;
+				}
 			}
 	}
 	
 	fclose(outputFile);
 	std::cout << "Finished writing to file." << std::endl;
 	return true;
-}
-
-const cl_float3* Image::GetPixelsPtr() const
-{
-	return m_Pixels.data();
 }

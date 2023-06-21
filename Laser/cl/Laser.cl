@@ -1,6 +1,6 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant int SAMPLES = 64;
+__constant int SAMPLES = 32;
 
 #include "Ray.cl"
 #include "Triangle.cl"
@@ -95,12 +95,12 @@ __kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
 	float focalLength, float3 cameraOrigin, float3 upperLeftCorner,
 	__global float3* vertices, __global struct Triangle* triangles,
 	unsigned int n_Triangles, __global struct Material* materials,
-	__global struct RenderStats* renderStats)
+	__global struct RenderStats* renderStats, unsigned int startingRow)
 {
 	// calculate pixel coordinates
 	const unsigned int workItemID = get_global_id(0);
-	unsigned int x = workItemID % imageWidth;
-	unsigned int y = workItemID / imageWidth;
+	unsigned int x = (startingRow * imageWidth + workItemID) % imageWidth;
+	unsigned int y = (startingRow * imageWidth + workItemID) / imageWidth;
 	float fx = (float)x / (float)(imageWidth - 1);
 	float fy = (float)y / (float)(imageHeight - 1);
 

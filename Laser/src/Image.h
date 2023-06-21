@@ -14,8 +14,9 @@ public:
 
 	Image(cl_uint width, cl_uint height, Format format);
 
-	bool WriteToFile(const std::string& filepath) const;
-	const cl_float3* GetPixelsPtr() const;
+	bool WriteToFile(const std::string& filepath, cl_uint rowsPerExec) const;
+
+	std::vector<std::vector<cl_float3>> m_Pixels;
 
 private:
 	inline cl_float clamp(cl_float x) const { return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x; }
@@ -24,5 +25,4 @@ private:
 	const cl_uint m_Width;
 	const cl_uint m_Height;
 	const cl_float m_AspectRatio;
-	std::vector<cl_float3> m_Pixels;
 };

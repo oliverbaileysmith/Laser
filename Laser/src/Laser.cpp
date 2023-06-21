@@ -35,6 +35,8 @@ int main()
 	upperLeftCorner.y += viewportHeight / 2.0f;
 	upperLeftCorner.z -= focalLength;
 
+	cl_uint rowsPerExec = 64; // Image rows processed per kernel execution
+
 	RenderStats stats;
 
 	ModelLoader loader;
@@ -53,7 +55,7 @@ int main()
 	materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
 	// OpenCL device data
-	if (!ocl.AddBuffer("output", CL_MEM_WRITE_ONLY, imageWidth * imageHeight * sizeof(cl_float3))) return -1;
+	if (!ocl.AddBuffer("output", CL_MEM_WRITE_ONLY, rowsPerExec * imageWidth * sizeof(cl_float3))) return -1;
 	if (!ocl.AddBuffer("vertices", CL_MEM_READ_ONLY, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3))) return -1;
 	if (!ocl.AddBuffer("triangles", CL_MEM_READ_ONLY, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle))) return -1;
 	if (!ocl.AddBuffer("materials", CL_MEM_READ_ONLY, sizeof(materials))) return -1;
@@ -76,7 +78,7 @@ int main()
 	if (!ocl.SetKernelArg(13, "stats")) return -1;
 
 	// OpenCL work items
-	std::size_t globalWorkSize = imageWidth * imageHeight;
+	std::size_t globalWorkSize = rowsPerExec * imageWidth;
 	std::size_t localWorkSize = 64;
 
 	clock_t timeStart = clock();
@@ -85,8 +87,18 @@ int main()
 	if (!ocl.QueueWrite("vertices", CL_TRUE, 0, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), meshes[0].GetVerticesPtr()->data())) return -1;
 	if (!ocl.QueueWrite("triangles", CL_TRUE, 0, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), meshes[0].GetTrianglesPtr()->data())) return -1;
 	if (!ocl.QueueWrite("materials", CL_TRUE, 0, sizeof(materials), &materials)) return -1;
-	if (!ocl.QueueKernel(NULL, globalWorkSize, localWorkSize)) return -1;
-	if (!ocl.QueueRead("output", CL_TRUE, 0, imageWidth * imageHeight * sizeof(cl_float3), (void*)image.GetPixelsPtr())) return -1;
+	
+	for (int j = 0; j < (float)imageHeight / (float)rowsPerExec; j++)
+	{
+		std::vector<cl_float3> rowPixels(globalWorkSize);
+		std::cout << "calculating rows: " << j * rowsPerExec << "-" << j * rowsPerExec + rowsPerExec - 1 << std::endl;
+		if (!ocl.SetKernelArg(14, j * (int)rowsPerExec)) return -1;
+
+		if (!ocl.QueueKernel(NULL, globalWorkSize, localWorkSize)) return -1;
+		if (!ocl.QueueRead("output", CL_TRUE, 0, globalWorkSize * sizeof(cl_float3), (void*)rowPixels.data())) return -1;
+
+		image.m_Pixels.emplace_back(rowPixels);
+	}
 	if (!ocl.QueueRead("stats", CL_TRUE, 0, sizeof(RenderStats), &stats)) return -1;
 
 	clock_t timeEnd = clock();
@@ -98,6 +110,6 @@ int main()
 	std::cout << "Ray-triangle tests:         " << stats.n_RayTriangleTests << std::endl;
 	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl << std::endl;
 
-	if (!image.WriteToFile("output.ppm")) return -1;
+	if (!image.WriteToFile("output.ppm", rowsPerExec)) return -1;
 	return 0;
 }

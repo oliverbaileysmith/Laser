@@ -90,17 +90,24 @@ float3 trace(struct Ray* primaryRay, __global float3* vertices, __global struct 
 	return color;
 }
 
-__kernel void Laser(__global float3* output, int imageWidth, int imageHeight,
+__kernel void Laser(__global float3* output, unsigned int imageWidth, unsigned int imageHeight,
 	float aspectRatio, float viewportWidth, float viewportHeight,
 	float focalLength, float3 cameraOrigin, float3 upperLeftCorner,
 	__global float3* vertices, __global struct Triangle* triangles,
 	unsigned int n_Triangles, __global struct Material* materials,
-	__global struct RenderStats* renderStats, unsigned int startingRow)
+	__global struct RenderStats* renderStats,
+	unsigned int xOffset, unsigned int yOffset,
+	unsigned int tileWidth, unsigned int tileHeight)
 {
 	// calculate pixel coordinates
 	const unsigned int workItemID = get_global_id(0);
-	unsigned int x = (startingRow * imageWidth + workItemID) % imageWidth;
-	unsigned int y = (startingRow * imageWidth + workItemID) / imageWidth;
+	unsigned int x = xOffset + (workItemID % tileWidth);
+	unsigned int y = yOffset + (workItemID / tileWidth);
+
+	// don't calculate anything if pixel is not in image bounds
+	// this happens in right column and bottom row of tiles
+	if (x >= imageWidth || y >= imageHeight) return;
+
 	float fx = (float)x / (float)(imageWidth - 1);
 	float fy = (float)y / (float)(imageHeight - 1);
 

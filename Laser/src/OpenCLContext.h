@@ -14,6 +14,7 @@ public:
 
 	bool SetKernelArg(cl_uint index, const std::string& bufferKey);
 	bool SetKernelArg(cl_uint index, cl_int value);
+	bool SetKernelArg(cl_uint index, cl_uint value);
 	bool SetKernelArg(cl_uint index, cl_float value);
 	bool SetKernelArg(cl_uint index, const cl_float3& value);
 

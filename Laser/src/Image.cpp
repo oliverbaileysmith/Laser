@@ -3,14 +3,16 @@
 #include <iostream>
 #include <fstream>
 
-Image::Image(cl_uint width, cl_uint height, Format format)
-	: m_Width(width), m_Height(height), m_Format(format),
-		m_AspectRatio((cl_float)m_Width/(cl_float)m_Height)
+Image::Image(cl_uint width, cl_uint height, cl_uint tileWidth, cl_uint tileHeight, Format format)
+	: m_Width(width), m_Height(height), m_TileWidth(tileWidth), m_TileHeight(tileHeight),
+		m_Format(format), m_AspectRatio((cl_float)m_Width/(cl_float)m_Height)
 {
-	m_Pixels.reserve(m_Height / 64);
+	m_Pixels.resize(m_Height);
+	for (int i = 0; i < m_Height; i++)
+		m_Pixels[i].resize(m_Width);
 }
 
-bool Image::WriteToFile(const std::string& filepath, cl_uint rowsPerExec) const
+bool Image::WriteToFile(const std::string& filepath) const
 {
 	std::cout << "Writing to file \"" << filepath << "\"..." << std::endl;
 
@@ -30,17 +32,14 @@ bool Image::WriteToFile(const std::string& filepath, cl_uint rowsPerExec) const
 			fprintf(outputFile, "P3\n%d %d\n%d\n", m_Width, m_Height, 255);
 
 			// Convert each pixel's RGB values from [0.0f, 1.0f] to [0, 255] and write to file
-			int counter = 0;
-			for (int j = 0; j < (float)m_Height / (float)rowsPerExec; j++)
+			for (int j = 0; j < m_Height; j++)
 			{
-				for (int i = 0; i < m_Width * rowsPerExec; i++)
+				for (int i = 0; i < m_Width; i++)
 				{
-					if (counter == m_Width * m_Height) break;
 					fprintf(outputFile, "%d %d %d ",
 						(cl_int)(clamp(m_Pixels[j][i].x) * 255),
 						(cl_int)(clamp(m_Pixels[j][i].y) * 255),
 						(cl_int)(clamp(m_Pixels[j][i].z) * 255));
-					counter++;
 				}
 			}
 	}

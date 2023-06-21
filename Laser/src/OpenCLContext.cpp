@@ -120,6 +120,17 @@ bool OpenCLContext::SetKernelArg(cl_uint index, cl_int value)
 	return true;
 }
 
+bool OpenCLContext::SetKernelArg(cl_uint index, cl_uint value)
+{
+	cl_int kernelError = m_Kernel.setArg(index, value);
+	if (kernelError)
+	{
+		std::cout << "OpenCL kernel error: " << kernelError << std::endl;
+		return false;
+	}
+	return true;
+}
+
 bool OpenCLContext::SetKernelArg(cl_uint index, cl_float value)
 {
 	cl_int kernelError = m_Kernel.setArg(index, value);

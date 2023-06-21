@@ -12,6 +12,16 @@
 #include "RenderStats.h"
 #include "Image.h"
 
+void CalcRowsAndColumns(cl_uint imageWidth, cl_uint imageHeight, cl_uint tileWidth, cl_uint tileHeight, cl_uint& nRows, cl_uint& nColumns)
+{
+	nRows = imageWidth / tileWidth;
+	nColumns = imageHeight / tileHeight;
+	if (imageWidth % tileWidth != 0)
+		nRows++;
+	if (imageHeight % tileHeight != 0)
+		nColumns++;
+}
+
 int main()
 {
 	OpenCLContext ocl;
@@ -21,10 +31,12 @@ int main()
 	if (!ocl.LoadKernel("cl/Laser.cl", "Laser")) return -1;
 
 	// Host data
-	const cl_int imageWidth = 600;
-	const cl_int imageHeight = 600;
+	const cl_uint imageWidth = 600;
+	const cl_uint imageHeight = 600;
+	const cl_uint tileWidth = 192;
+	const cl_uint tileHeight = 192;
 	const cl_float aspectRatio = (cl_float)imageWidth / (cl_float)imageHeight;
-	Image image(imageWidth, imageHeight, Image::Format::ppm);
+	Image image(imageWidth, imageHeight, tileWidth, tileHeight, Image::Format::ppm);
 
 	cl_float viewportHeight = 2.0f;
 	cl_float viewportWidth = viewportHeight * aspectRatio;
@@ -35,7 +47,9 @@ int main()
 	upperLeftCorner.y += viewportHeight / 2.0f;
 	upperLeftCorner.z -= focalLength;
 
-	cl_uint rowsPerExec = 64; // Image rows processed per kernel execution
+	cl_uint nRows;
+	cl_uint nColumns;
+	CalcRowsAndColumns(imageWidth, imageHeight, tileWidth, tileHeight, nRows, nColumns);
 
 	RenderStats stats;
 
@@ -55,7 +69,7 @@ int main()
 	materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
 	// OpenCL device data
-	if (!ocl.AddBuffer("output", CL_MEM_WRITE_ONLY, rowsPerExec * imageWidth * sizeof(cl_float3))) return -1;
+	if (!ocl.AddBuffer("output", CL_MEM_WRITE_ONLY, tileWidth * tileHeight * sizeof(cl_float3))) return -1;
 	if (!ocl.AddBuffer("vertices", CL_MEM_READ_ONLY, meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3))) return -1;
 	if (!ocl.AddBuffer("triangles", CL_MEM_READ_ONLY, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle))) return -1;
 	if (!ocl.AddBuffer("materials", CL_MEM_READ_ONLY, sizeof(materials))) return -1;
@@ -76,9 +90,11 @@ int main()
 	if (!ocl.SetKernelArg(11, n_Triangles)) return -1;
 	if (!ocl.SetKernelArg(12, "materials")) return -1;
 	if (!ocl.SetKernelArg(13, "stats")) return -1;
+	if (!ocl.SetKernelArg(16, tileWidth)) return -1;
+	if (!ocl.SetKernelArg(17, tileHeight)) return -1;
 
 	// OpenCL work items
-	std::size_t globalWorkSize = rowsPerExec * imageWidth;
+	std::size_t globalWorkSize = tileWidth * tileHeight;
 	std::size_t localWorkSize = 64;
 
 	clock_t timeStart = clock();
@@ -88,17 +104,34 @@ int main()
 	if (!ocl.QueueWrite("triangles", CL_TRUE, 0, meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), meshes[0].GetTrianglesPtr()->data())) return -1;
 	if (!ocl.QueueWrite("materials", CL_TRUE, 0, sizeof(materials), &materials)) return -1;
 	
-	for (int j = 0; j < (float)imageHeight / (float)rowsPerExec; j++)
+	for (int k = 0; k < nRows * nColumns; k++)
 	{
-		std::vector<cl_float3> rowPixels(globalWorkSize);
-		std::cout << "calculating rows: " << j * rowsPerExec << "-" << j * rowsPerExec + rowsPerExec - 1 << std::endl;
-		if (!ocl.SetKernelArg(14, j * (int)rowsPerExec)) return -1;
+		cl_uint tileX = k % nRows;
+		cl_uint tileY = k / nRows;
+
+		cl_uint xOffset = tileX * tileWidth;
+		cl_uint yOffset = tileY * tileHeight;
+
+		Image::Tile tile(tileWidth, tileHeight);
+		if (!ocl.SetKernelArg(14, xOffset)) return -1;
+		if (!ocl.SetKernelArg(15, yOffset)) return -1;
 
 		if (!ocl.QueueKernel(NULL, globalWorkSize, localWorkSize)) return -1;
-		if (!ocl.QueueRead("output", CL_TRUE, 0, globalWorkSize * sizeof(cl_float3), (void*)rowPixels.data())) return -1;
+		if (!ocl.QueueRead("output", CL_TRUE, 0, globalWorkSize * sizeof(cl_float3), tile.Pixels.data())) return -1;
 
-		image.m_Pixels.emplace_back(rowPixels);
+		for (int j = 0; j < tileHeight; j++)
+		{
+			int y = yOffset + j;
+			if (y == imageHeight) break;
+			for (int i = 0; i < tileWidth; i++)
+			{
+				int x = xOffset + i;
+				if (x == imageWidth) break;
+				image.m_Pixels[y][x] = tile.Pixels[j * tileWidth + i];
+			}
+		}
 	}
+
 	if (!ocl.QueueRead("stats", CL_TRUE, 0, sizeof(RenderStats), &stats)) return -1;
 
 	clock_t timeEnd = clock();
@@ -110,6 +143,6 @@ int main()
 	std::cout << "Ray-triangle tests:         " << stats.n_RayTriangleTests << std::endl;
 	std::cout << "Ray-triangle intersections: " << stats.n_RayTriangleIsects << std::endl << std::endl;
 
-	if (!image.WriteToFile("output.ppm", rowsPerExec)) return -1;
+	if (!image.WriteToFile("output.ppm")) return -1;
 	return 0;
 }

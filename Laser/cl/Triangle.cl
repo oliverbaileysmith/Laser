@@ -1,3 +1,5 @@
+#include "RenderStats.cl"
+
 struct Triangle
 {
 	unsigned int v0;

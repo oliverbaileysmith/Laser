@@ -7,7 +7,6 @@ __constant unsigned int MAX_DEPTH = 4;
 #include "Triangle.cl"
 #include "Material.cl"
 #include "Intersection.cl"
-#include "RenderStats.cl"
 #include "Random.cl"
 
 bool intersect(struct Ray* ray, __global float3* vertices,

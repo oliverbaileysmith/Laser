@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <glm/glm.hpp>
+
 #include "OpenCLContext.h"
 #include "Image.h"
 #include "RenderStats.h"
@@ -31,6 +33,7 @@ private:
 	std::vector<TriangleMesh> m_Meshes;
 	cl_uint m_NTriangles;
 	std::vector<Material> m_Materials;
+	std::vector<glm::mat4> m_Transforms;
 
 	// Image
 	Image m_Image;

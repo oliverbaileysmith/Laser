@@ -50,11 +50,9 @@ TriangleMesh ModelLoader::ProcessAssimpMesh(aiMesh* assimpMesh, const aiScene* a
     for (uint32_t i = 0; i < assimpMesh->mNumVertices; i++)
     {
         cl_float3 vertex;
-
-        // TODO: remove manual transform of vertices
-        vertex.x = assimpMesh->mVertices[i].x / 1.8;
-        vertex.y = assimpMesh->mVertices[i].y / 1.8 - 1.5f;
-        vertex.z = assimpMesh->mVertices[i].z / 1.8 - 1.5f;
+        vertex.x = assimpMesh->mVertices[i].x;
+        vertex.y = assimpMesh->mVertices[i].y;
+        vertex.z = assimpMesh->mVertices[i].z;
 
         vertices.push_back(vertex);
     }
@@ -69,8 +67,9 @@ TriangleMesh ModelLoader::ProcessAssimpMesh(aiMesh* assimpMesh, const aiScene* a
         triangle.v1 = assimpFace.mIndices[1];
         triangle.v2 = assimpFace.mIndices[2];
 
-        // TODO: correctly assign material
-        triangle.MaterialIndex = 0;
+        // TODO: correctly assign material and transform
+        triangle.Material = 0;
+        triangle.Transform = 1;
 
         triangles.push_back(triangle);
     }

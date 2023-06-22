@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include <iostream>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "ModelLoader.h"
 
@@ -43,6 +44,12 @@ bool Application::Init()
 	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // green
 	m_Materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
+	m_Transforms.resize(2);
+	m_Transforms[0] = glm::mat4(1.0f); // identity (index 0 reserved for when no transform is supplied)
+	m_Transforms[1] = glm::scale(glm::mat4(1.0f), glm::vec3(0.4f));
+	m_Transforms[1] = glm::rotate(m_Transforms[1], glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	m_Transforms[1] = glm::translate(m_Transforms[1], glm::vec3(0.0f, -1.8f, -1.5f));
+
 	return true;
 }
 
@@ -52,6 +59,7 @@ bool Application::GenBuffers()
 	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_Meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3)));
 	VERIFY(m_OCL.AddBuffer("triangles", CL_MEM_READ_ONLY, m_Meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle)));
 	VERIFY(m_OCL.AddBuffer("materials", CL_MEM_READ_ONLY, m_Materials.size() * sizeof(Material)));
+	VERIFY(m_OCL.AddBuffer("transforms", CL_MEM_READ_ONLY, m_Transforms.size() * sizeof(glm::mat4)));
 	VERIFY(m_OCL.AddBuffer("stats", CL_MEM_READ_WRITE, sizeof(m_RenderStats)));
 
 	return true;
@@ -74,9 +82,10 @@ bool Application::SetKernelArgs()
 	VERIFY(m_OCL.SetKernelArg(10, "triangles"));
 	VERIFY(m_OCL.SetKernelArg(11, m_NTriangles));
 	VERIFY(m_OCL.SetKernelArg(12, "materials"));
-	VERIFY(m_OCL.SetKernelArg(13, "stats"));
-	VERIFY(m_OCL.SetKernelArg(16, props.TileWidth));
-	VERIFY(m_OCL.SetKernelArg(17, props.TileHeight));
+	VERIFY(m_OCL.SetKernelArg(13, "transforms"));
+	VERIFY(m_OCL.SetKernelArg(14, "stats"));
+	VERIFY(m_OCL.SetKernelArg(17, props.TileWidth));
+	VERIFY(m_OCL.SetKernelArg(18, props.TileHeight));
 
 	return true;
 }
@@ -90,6 +99,7 @@ bool Application::Render()
 	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_Meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), m_Meshes[0].GetVerticesPtr()->data()));
 	VERIFY(m_OCL.QueueWrite("triangles", CL_TRUE, 0, m_Meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), m_Meshes[0].GetTrianglesPtr()->data()));
 	VERIFY(m_OCL.QueueWrite("materials", CL_TRUE, 0, m_Materials.size() * sizeof(Material), m_Materials.data()));
+	VERIFY(m_OCL.QueueWrite("transforms", CL_TRUE, 0, m_Transforms.size() * sizeof(glm::mat4), m_Transforms.data()));
 
 	Image::Props props = m_Image.GetProps();
 	// Execute kernel for each tile
@@ -106,8 +116,8 @@ bool Application::Render()
 		cl_uint yOffset = tileY * props.TileHeight;
 
 		// Send per-tile offsets to OpenCL device
-		VERIFY(m_OCL.SetKernelArg(14, xOffset));
-		VERIFY(m_OCL.SetKernelArg(15, yOffset));
+		VERIFY(m_OCL.SetKernelArg(15, xOffset));
+		VERIFY(m_OCL.SetKernelArg(16, yOffset));
 
 		// Execute kernel
 		VERIFY(m_OCL.QueueKernel(NULL, m_GlobalWorkSize, m_LocalWorkSize));

@@ -3,16 +3,25 @@
 #include <iostream>
 #include <fstream>
 
-Image::Image(cl_uint width, cl_uint height, Format format)
-	: m_Width(width), m_Height(height), m_Format(format),
-		m_AspectRatio((cl_float)m_Width/(cl_float)m_Height)
+Image::Image(cl_uint width, cl_uint height, cl_uint tileWidth, cl_uint tileHeight, Format format)
 {
-	m_Pixels.resize(m_Width * m_Height);
+	m_Props.Width = width;
+	m_Props.Height = height;
+	m_Props.TileWidth = tileWidth;
+	m_Props.TileHeight = tileHeight;
+	m_Props.AspectRatio = (float)width / (float)height;
+	m_Props.nRows = 0;
+	m_Props.nColumns = 0;
+	m_Props.Format = format;
+
+	m_Pixels.resize(m_Props.Height);
+	for (int i = 0; i < m_Props.Height; i++)
+		m_Pixels[i].resize(m_Props.Width);
 }
 
-void Image::WriteToFile(std::string filepath) const
+bool Image::WriteToFile(const std::string& filepath) const
 {
-	std::cout << std::endl << "Writing to file \"" << filepath << "\"..." << std::endl;
+	std::cout << "Writing to file \"" << filepath << "\"..." << std::endl;
 
 	// Open file and ensure it was successfully created
 	FILE* outputFile = nullptr;
@@ -20,30 +29,50 @@ void Image::WriteToFile(std::string filepath) const
 	if (!outputFile)
 	{
 		std::cout << "Failed to open file " << filepath << "." << std::endl;
-		return;
+		return false;
 	}
 
-	switch (m_Format)
+	switch (m_Props.Format)
 	{
 		case Format::ppm:
 		default:
-			fprintf(outputFile, "P3\n%d %d\n%d\n", m_Width, m_Height, 255);
+			fprintf(outputFile, "P3\n%d %d\n%d\n", m_Props.Width, m_Props.Height, 255);
 
 			// Convert each pixel's RGB values from [0.0f, 1.0f] to [0, 255] and write to file
-			for (int i = 0; i < m_Width * m_Height; i++)
+			for (int j = 0; j < m_Props.Height; j++)
 			{
-				fprintf(outputFile, "%d %d %d ",
-					(cl_int)(clamp(m_Pixels[i].x) * 255),
-					(cl_int)(clamp(m_Pixels[i].y) * 255),
-					(cl_int)(clamp(m_Pixels[i].z) * 255));
+				for (int i = 0; i < m_Props.Width; i++)
+				{
+					fprintf(outputFile, "%d %d %d ",
+						(cl_int)(clamp(m_Pixels[j][i].x) * 255),
+						(cl_int)(clamp(m_Pixels[j][i].y) * 255),
+						(cl_int)(clamp(m_Pixels[j][i].z) * 255));
+				}
 			}
 	}
 	
 	fclose(outputFile);
 	std::cout << "Finished writing to file." << std::endl;
+	return true;
 }
 
-const cl_float3* Image::GetPixelsPtr() const
+void Image::CalcTileRowsAndColumns(cl_uint& nRows, cl_uint& nColumns) const
 {
-	return m_Pixels.data();
+	nRows = m_Props.Width / m_Props.TileWidth;
+	nColumns = m_Props.Height / m_Props.TileHeight;
+	if (m_Props.Width % m_Props.TileWidth != 0)
+		nRows++;
+	if (m_Props.Height % m_Props.TileHeight != 0)
+		nColumns++;
+}
+
+void Image::SetTileRowsAndColumns(cl_uint nRows, cl_uint nColumns)
+{
+	m_Props.nRows = nRows;
+	m_Props.nColumns = nColumns;
+}
+
+Image::Props Image::GetProps() const
+{
+	return m_Props;
 }

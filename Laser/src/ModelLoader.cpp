@@ -5,7 +5,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
-std::vector<TriangleMesh> ModelLoader::LoadModel(std::string filepath)
+std::vector<TriangleMesh> ModelLoader::LoadModel(const std::string& filepath)
 {
     std::vector<TriangleMesh> meshes;
     Assimp::Importer importer;

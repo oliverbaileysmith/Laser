@@ -7,7 +7,7 @@
 class ModelLoader
 {
 public:
-	std::vector<TriangleMesh> LoadModel(std::string filepath);
+	std::vector<TriangleMesh> LoadModel(const std::string& filepath);
 
 private:
 	void ProcessAssimpNode(aiNode* assimpNode, const aiScene* assimpScene, std::vector<TriangleMesh>& meshes);

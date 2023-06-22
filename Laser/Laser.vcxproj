@@ -88,6 +88,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Image.cpp" />
     <ClCompile Include="src\Laser.cpp" />
     <ClCompile Include="src\ModelLoader.cpp" />
@@ -104,6 +105,7 @@
     <None Include="cl\Material.cl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Image.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\ModelLoader.h" />

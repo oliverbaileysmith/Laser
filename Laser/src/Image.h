@@ -12,6 +12,18 @@ public:
 		ppm = 0
 	};
 
+	struct Props
+	{
+		cl_uint Width;
+		cl_uint Height;
+		cl_float AspectRatio;
+		cl_uint TileWidth;
+		cl_uint TileHeight;
+		cl_uint nRows;
+		cl_uint nColumns;
+		Format Format;
+	};
+
 	struct Tile
 	{
 		Tile(cl_uint width, cl_uint height)
@@ -29,15 +41,15 @@ public:
 
 	bool WriteToFile(const std::string& filepath) const;
 
+	void CalcTileRowsAndColumns(cl_uint& nRows, cl_uint& nColumns) const;
+	void SetTileRowsAndColumns(cl_uint nRows, cl_uint nColumns);
+
+	Props GetProps() const;
+
 	std::vector<std::vector<cl_float3>> m_Pixels;
 
 private:
 	inline cl_float clamp(cl_float x) const { return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x; }
 
-	const cl_uint m_Width;
-	const cl_uint m_Height;
-	const cl_float m_AspectRatio;
-	const cl_uint m_TileWidth;
-	const cl_uint m_TileHeight;
-	Format m_Format;
+	Props m_Props;
 };

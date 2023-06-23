@@ -93,6 +93,7 @@
     <ClCompile Include="src\Laser.cpp" />
     <ClCompile Include="src\ModelLoader.cpp" />
     <ClCompile Include="src\OpenCLContext.cpp" />
+    <ClCompile Include="src\Transform.cpp" />
     <ClCompile Include="src\TriangleMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +113,7 @@
     <ClInclude Include="src\ModelLoader.h" />
     <ClInclude Include="src\OpenCLContext.h" />
     <ClInclude Include="src\RenderStats.h" />
+    <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Triangle.h" />
     <ClInclude Include="src\TriangleMesh.h" />
   </ItemGroup>

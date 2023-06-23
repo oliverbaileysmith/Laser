@@ -30,6 +30,12 @@
     <ClCompile Include="src\OpenCLContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Transform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="cl\Laser.cl" />
@@ -39,6 +45,7 @@
     <None Include="cl\Intersection.cl" />
     <None Include="cl\RenderStats.cl" />
     <None Include="cl\Random.cl" />
+    <None Include="cl\Transform.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Triangle.h">
@@ -60,6 +67,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\OpenCLContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

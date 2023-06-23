@@ -1,9 +1,9 @@
 #include "Application.h"
 
 #include <iostream>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "ModelLoader.h"
+#include "Transform.h"
 
 #define VERIFY(x) if (!x) return false
 
@@ -35,7 +35,7 @@ bool Application::Init()
 	m_Image.SetTileRowsAndColumns(nRows, nColumns);
 
 	// Load geometry
-	VERIFY(LoadModel("res/models/utah-teapot.obj"));
+	VERIFY(LoadModel("res/models/cube.obj"));
 
 	// Set materials
 	m_Materials.resize(4);
@@ -44,11 +44,11 @@ bool Application::Init()
 	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // green
 	m_Materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
+	// Set transforms
+	Transform t;
 	m_Transforms.resize(2);
-	m_Transforms[0] = glm::mat4(1.0f); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = glm::scale(glm::mat4(1.0f), glm::vec3(0.4f));
-	m_Transforms[1] = glm::rotate(m_Transforms[1], glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	m_Transforms[1] = glm::translate(m_Transforms[1], glm::vec3(0.0f, -1.8f, -1.5f));
+	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
+	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.0f, -1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.5f)); 
 
 	return true;
 }

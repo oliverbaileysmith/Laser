@@ -1,9 +1,12 @@
+#include "RenderStats.cl"
+
 struct Triangle
 {
 	unsigned int v0;
 	unsigned int v1;
 	unsigned int v2;
-	unsigned int MaterialIndex;
+	unsigned int Material;
+	unsigned int Transform;
 };
 
 bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,

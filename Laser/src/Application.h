@@ -48,4 +48,8 @@ private:
 	
 	// Profiler
 	RenderStats m_RenderStats;
+	clock_t m_AppStart;
+	clock_t m_AppEnd;
+	clock_t m_RenderStart;
+	clock_t m_RenderEnd;
 };

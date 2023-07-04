@@ -16,6 +16,8 @@ Application::Application()
 {
 	m_GlobalWorkSize = m_Image.GetProps().TileHeight * m_Image.GetProps().TileWidth;
 
+	m_AppStart = clock();
+
 	// TODO: camera abstraction
 	m_UpperLeftCorner.x -= m_ViewportWidth / 2.0f;
 	m_UpperLeftCorner.y += m_ViewportHeight / 2.0f;
@@ -35,20 +37,20 @@ bool Application::Init()
 	m_Image.SetTileRowsAndColumns(nRows, nColumns);
 
 	// Load geometry
-	VERIFY(LoadModel("res/models/cube.obj"));
+	VERIFY(LoadModel("res/models/utah-teapot.obj"));
 
 	// Set materials
 	m_Materials.resize(4);
 	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f} }; // white
 	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // red
 	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // green
-	m_Materials[3] = { {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f} }; // light
+	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f} }; // light
 
 	// Set transforms
 	Transform t;
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.0f, -1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.5f)); 
+	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f)); 
 
 	return true;
 }
@@ -94,6 +96,7 @@ bool Application::Render()
 {
 	// TODO: Create profiler class and fix timing
 	// clock_t timeStart = clock();
+	m_RenderStart = clock();
 
 	// Write scene data to OpenCL buffers
 	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_Meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), m_Meshes[0].GetVerticesPtr()->data()));
@@ -141,6 +144,7 @@ bool Application::Render()
 
 	// clock_t timeEnd = clock();
 	// stats.RenderTime = (cl_float)(timeEnd - timeStart) / CLOCKS_PER_SEC;
+	m_RenderEnd = clock();
 
 	// Read profiler stats from OpenCL device
 	VERIFY(m_OCL.QueueRead("stats", CL_TRUE, 0, sizeof(m_RenderStats), &m_RenderStats));
@@ -160,6 +164,10 @@ bool Application::WriteOutput()
 	// Write image to file
 	VERIFY(m_Image.WriteToFile("output.ppm"));
 	
+	m_AppEnd = clock();
+	std::cout << "App time: " << (float)(m_AppEnd - m_AppStart) / CLOCKS_PER_SEC << "s." << std::endl;
+	std::cout << "Render time: " << (float)(m_RenderEnd - m_RenderStart) / CLOCKS_PER_SEC << "s." << std::endl;
+
 	return true;
 }
 

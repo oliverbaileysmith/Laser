@@ -89,6 +89,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\Bounds.cpp" />
+    <ClCompile Include="src\BVH.cpp" />
     <ClCompile Include="src\Image.cpp" />
     <ClCompile Include="src\Laser.cpp" />
     <ClCompile Include="src\ModelLoader.cpp" />
@@ -108,6 +110,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application.h" />
+    <ClInclude Include="src\Bounds.h" />
+    <ClInclude Include="src\BVH.h" />
     <ClInclude Include="src\Image.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\ModelLoader.h" />

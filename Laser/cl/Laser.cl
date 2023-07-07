@@ -1,7 +1,7 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant unsigned int SAMPLES = 32;
-__constant unsigned int MAX_DEPTH = 4;
+__constant unsigned int SAMPLES = 16;
+__constant unsigned int MAX_DEPTH = 3;
 
 #include "Ray.cl"
 #include "Triangle.cl"

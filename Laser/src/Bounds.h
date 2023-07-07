@@ -20,4 +20,6 @@ public:
 	void Extend(const cl_float3& p);
 	// Join two bounds
 	void Join(const Bounds& b);
+	// Get dimension with largest extent
+	cl_uint GetLargestDimension() const;
 };

@@ -47,3 +47,17 @@ void Bounds::Join(const Bounds& b)
     pMax.y = std::max(pMax.y, b.pMax.y);
     pMax.z = std::max(pMax.z, b.pMax.z);
 }
+
+cl_uint Bounds::GetLargestDimension() const
+{
+    cl_float diagonalX = pMax.x - pMin.x;
+    cl_float diagonalY = pMax.y - pMin.y;
+    cl_float diagonalZ = pMax.z - pMin.z;
+
+    if (diagonalX > diagonalY && diagonalX > diagonalZ)
+        return 0;
+    else if (diagonalY > diagonalZ)
+        return 1;
+    else
+        return 2;
+}

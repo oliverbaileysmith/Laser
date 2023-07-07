@@ -72,6 +72,11 @@ BVH::BVH(const std::vector<cl_float3>& vertices, const std::vector<Triangle>& tr
 
 	// Store ordered triangles
 	m_Triangles.swap(orderedTriangles);
+
+	// Build depth-first representation for non-recursive GPU traversal
+	m_BVHLinearNodes.resize(totalNodes);
+	cl_uint offset = 0;
+	Flatten(root, &offset);
 }
 
 BVH::~BVH()
@@ -93,7 +98,7 @@ BVH::BVHBuildNode* BVH::Build(std::vector<BVHTriangleInfo>& trianglesInfo, cl_ui
 	cl_uint nTriangles = end - start;
 	if (nTriangles == 1)
 	{
-		// Create leaf node
+		// Create leaf node with 1 triangle
 		cl_uint firstTriangleOffset = orderedTriangles.size();
 		for (cl_uint i = start; i < end; i++)
 		{
@@ -122,7 +127,7 @@ BVH::BVHBuildNode* BVH::Build(std::vector<BVHTriangleInfo>& trianglesInfo, cl_ui
 		// If bounds of centroids of triangles is degenerate
 		if (pMinInDim == pMaxInDim)
 		{
-			// Create leaf node
+			// Create leaf node with multiple triangles
 			cl_uint firstTriangleOffset = orderedTriangles.size();
 			for (cl_uint i = start; i < end; i++)
 			{
@@ -150,6 +155,30 @@ BVH::BVHBuildNode* BVH::Build(std::vector<BVHTriangleInfo>& trianglesInfo, cl_ui
 		}
 	}
 	return node;
+}
+
+cl_uint BVH::Flatten(BVHBuildNode* node, cl_uint* offset)
+{
+	BVHLinearNode* linearNode = &m_BVHLinearNodes[*offset];
+	linearNode->Bounds = node->Bounds;
+	cl_uint myOffset = (*offset)++;
+	// If node is leaf
+	if (node->nTriangles > 0)
+	{
+		// Copy triangle indices
+		linearNode->FirstTriangle = node->FirstTriangle;
+		linearNode->nTriangles = node->nTriangles;
+	}
+	// If node is interior
+	else
+	{
+		// Copy split axis and flatten children
+		linearNode->SplitAxis = node->SplitAxis;
+		linearNode->nTriangles = 0;
+		Flatten(node->Children[0], offset);
+		linearNode->SecondChildOffset = Flatten(node->Children[1], offset);
+	}
+	return myOffset;
 }
 
 Bounds BVH::CalcTriangleBounds(cl_uint tri) const

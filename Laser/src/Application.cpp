@@ -4,6 +4,7 @@
 
 #include "ModelLoader.h"
 #include "Transform.h"
+#include "BVH.h"
 
 #define VERIFY(x) if (!x) return false
 
@@ -51,6 +52,8 @@ bool Application::Init()
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
 	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f)); 
+
+	BVH bvh(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);
 
 	return true;
 }

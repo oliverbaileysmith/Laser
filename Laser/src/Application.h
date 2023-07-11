@@ -9,6 +9,7 @@
 #include "RenderStats.h"
 #include "TriangleMesh.h"
 #include "Material.h"
+#include "BVH.h"
 
 class Application
 {
@@ -34,6 +35,7 @@ private:
 	cl_uint m_NTriangles;
 	std::vector<Material> m_Materials;
 	std::vector<glm::mat4> m_Transforms;
+	BVH m_BVH;
 
 	// Image
 	Image m_Image;
@@ -48,4 +50,8 @@ private:
 	
 	// Profiler
 	RenderStats m_RenderStats;
+	clock_t m_AppStart;
+	clock_t m_AppEnd;
+	clock_t m_RenderStart;
+	clock_t m_RenderEnd;
 };

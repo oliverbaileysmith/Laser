@@ -16,10 +16,11 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 	__global struct RenderStats* renderStats)
 {
 	bool hit = false;
+
 	float3 invDir = (float3)(1.0f / ray->dir.x, 1.0f / ray->dir.y, 1.0f / ray->dir.z);
     int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z < 0 };
 
-	float closestT = INFINITY;
+	float currentT = INFINITY;
 
 	uint current = 0;
 	uint toVisitOffset = 0;
@@ -28,12 +29,9 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 	while (true)
 	{
 		struct BVHLinearNode node = bvh[current];
-		
-		float t0;
-		float t1;
 
 		// If ray hits current node
-		if (intersectBounds(ray, &node.Bounds, &t0, &t1))
+		if (intersectBounds(ray, &node.Bounds))
 		{
 			// If node is leaf
 			if (node.nTriangles > 0)
@@ -61,13 +59,13 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 					v2 = multMat4Point(&transform, &v2);
 					
 					// If ray intersects triangle
-					if (intersectTriangle(ray, v0, v1, v2, &closestT, n, renderStats))
+					if (intersectTriangle(ray, v0, v1, v2, &currentT, n, renderStats))
 					{
 						hit = true;
 						// Update t if closer hit
-						if (closestT != 0.0f && closestT < *t)
+						if (currentT != 0.0f && currentT < *t)
 						{
-							*t = closestT;
+							*t = currentT;
 							isect->P = ray->orig + *t * ray->dir;
 							isect->N = *n;
 							isect->Albedo = materials[triangles[triIndex].Material].Albedo;
@@ -77,14 +75,10 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 				}
 				// Break if done, otherwise update toVisitOffset
 				if (toVisitOffset == 0)
-				{
 					break;
-				}
-				else
-				{
-					current = nodesToVisit[--toVisitOffset];
-				}
+				current = nodesToVisit[--toVisitOffset];
 			}
+
 			// If node is interior
 			else
 			{
@@ -101,18 +95,14 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 				}
 			}
 		}
+
 		// If ray misses current node
 		else
 		{
 			// Break if done, otherwise update toVisitOffset
 			if (toVisitOffset == 0)
-			{
 				break;
-			}
-			else
-			{
-				current = nodesToVisit[--toVisitOffset];
-			}
+			current = nodesToVisit[--toVisitOffset];
 		}
 	}
 	return hit;

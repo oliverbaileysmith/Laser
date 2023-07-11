@@ -39,8 +39,6 @@ bool Application::Init()
 
 	// Load geometry
 	VERIFY(LoadModel("res/models/utah-teapot.obj"));
-	//VERIFY(LoadModel("res/models/cube.obj"));
-	//VERIFY(LoadModel("res/models/tetrahedron.obj"));
 
 	// Set materials
 	m_Materials.resize(4);
@@ -53,9 +51,7 @@ bool Application::Init()
 	Transform t;
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f)); 
-	//m_Transforms[1] = t.Generate(glm::vec3(0.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.2f));
-	//m_Transforms[1] = t.Generate(glm::vec3(0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.5f));
+	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f));
 
 	// Construct BVH
 	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);

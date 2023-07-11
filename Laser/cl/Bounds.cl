@@ -4,7 +4,7 @@ struct Bounds
 	float3 pMax;
 };
 
-bool intersectBounds(struct Ray* ray, struct Bounds* bounds, float* t0Hit, float* t1Hit)
+bool intersectBounds(struct Ray* ray, struct Bounds* bounds)
 {
     float t0 = 0;
     float t1 = INFINITY;
@@ -30,11 +30,6 @@ bool intersectBounds(struct Ray* ray, struct Bounds* bounds, float* t0Hit, float
 
         // Return if interval is degenerate
         if (t0 > t1) return false;
-
     }
-
-    // Update t0Hit and t1Hit parameters
-    if (t0Hit) *t0Hit = t0;
-    if (t1Hit) *t1Hit = t1;
     return true;
 }

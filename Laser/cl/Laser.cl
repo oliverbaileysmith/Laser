@@ -6,8 +6,6 @@ __constant unsigned int MAX_DEPTH = 4;
 #include "Ray.cl"
 #include "Triangle.cl"
 #include "Material.cl"
-#include "Intersection.cl"
-#include "Random.cl"
 #include "Transform.cl"
 #include "BVH.cl"
 
@@ -30,31 +28,26 @@ float3 trace(struct Ray* primaryRay, __global float3* vertices,
 		struct Intersection isect;
 
 		if (!intersectBVH(&ray, vertices, triangles, materials, transforms, bvh, &t, &n, &isect, renderStats))
-		{
+			// Return background color
 			return (float3)(0.2f, 0.2f, 0.2f);
-		}
 
-		// Modify ray for diffuse reflection
-		// compute two random numbers to pick a random point on the hemisphere above the hitpoint
-		float rand1 = 2.0f * PI * getRandom(seed0, seed1);
-		float rand2 = getRandom(seed0, seed1);
-		float rand2s = sqrt(rand2);
+		// Local copy of material
+		struct Material material = materials[isect.MaterialIndex];
+		
+		// Update ray direction for next bounce using specular reflection
+		if (material.IsMetal)
+			ray.dir = calcSpecularReflectionDirection(&isect, &ray.dir);
 
-		// create a local orthogonal coordinate frame centered at the hitpoint
-		float3 w = isect.N;
-		float3 axis = fabs(w.x) > 0.1f ? (float3)(0.0f, 1.0f, 0.0f) : (float3)(1.0f, 0.0f, 0.0f);
-		float3 u = normalize(cross(axis, w));
-		float3 v = cross(w, u);
+		// Update ray direction for next bounce using diffuse reflection
+		else
+			ray.dir = calcDiffuseReflectionDirection(&isect, seed0, seed1);\
 
-		// use the coordinte frame and random numbers to compute the next ray direction
-		float3 newDir = normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
-
+		// Update ray origin for next bounce
 		ray.orig = isect.P + isect.N * EPSILON;
-		ray.dir = newDir;
 
 		// accumulate color
-		color += mask * isect.Emission;
-		mask *= isect.Albedo;
+		color += mask * material.Emission;
+		mask *= material.Albedo;
 		mask *= dot(ray.dir, isect.N);
 	}
 	return color;

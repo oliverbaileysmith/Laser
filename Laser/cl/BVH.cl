@@ -68,8 +68,7 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 							*t = currentT;
 							isect->P = ray->orig + *t * ray->dir;
 							isect->N = *n;
-							isect->Albedo = materials[triangles[triIndex].Material].Albedo;
-							isect->Emission = materials[triangles[triIndex].Material].Emission;
+							isect->MaterialIndex = triangles[triIndex].Material;
 						}
 					}
 				}

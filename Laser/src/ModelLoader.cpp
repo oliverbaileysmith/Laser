@@ -68,7 +68,7 @@ TriangleMesh ModelLoader::ProcessAssimpMesh(aiMesh* assimpMesh, const aiScene* a
         triangle.v2 = assimpFace.mIndices[2];
 
         // TODO: correctly assign material and transform
-        triangle.Material = 0;
+        triangle.Material = 4;
         triangle.Transform = 1;
 
         triangles.push_back(triangle);

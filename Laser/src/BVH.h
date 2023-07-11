@@ -8,7 +8,7 @@
 
 class BVH
 {
-private:
+public:
 	/********** BVH TRIANGLE INFO **********/
 	struct BVHTriangleInfo
 	{
@@ -54,6 +54,7 @@ private:
 
 	/********** BVH **********/
 public:
+	BVH();
 	BVH(const std::vector<cl_float3>& vertices, const std::vector<Triangle>& triangles, const std::vector<glm::mat4>& transforms);
 	~BVH();
 
@@ -65,9 +66,9 @@ private:
 
 	Bounds CalcTriangleBounds(cl_uint triangle) const;
 
-private:
+public:
 	// Scene data
-	std::vector <cl_float3> m_Vertices;
+	std::vector<cl_float3> m_Vertices;
 	std::vector<Triangle> m_Triangles;
 	std::vector<glm::mat4> m_Transforms;
 	std::vector<BVHLinearNode> m_BVHLinearNodes;

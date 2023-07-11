@@ -39,6 +39,8 @@ bool Application::Init()
 
 	// Load geometry
 	VERIFY(LoadModel("res/models/utah-teapot.obj"));
+	//VERIFY(LoadModel("res/models/cube.obj"));
+	//VERIFY(LoadModel("res/models/tetrahedron.obj"));
 
 	// Set materials
 	m_Materials.resize(4);
@@ -52,8 +54,11 @@ bool Application::Init()
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
 	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f)); 
+	//m_Transforms[1] = t.Generate(glm::vec3(0.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.2f));
+	//m_Transforms[1] = t.Generate(glm::vec3(0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.5f));
 
-	BVH bvh(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);
+	// Construct BVH
+	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);
 
 	return true;
 }
@@ -61,10 +66,11 @@ bool Application::Init()
 bool Application::GenBuffers()
 {
 	VERIFY(m_OCL.AddBuffer("output", CL_MEM_WRITE_ONLY, m_GlobalWorkSize * sizeof(cl_float3)));
-	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_Meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3)));
-	VERIFY(m_OCL.AddBuffer("triangles", CL_MEM_READ_ONLY, m_Meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle)));
+	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_BVH.m_Vertices.size() * sizeof(cl_float3)));
+	VERIFY(m_OCL.AddBuffer("triangles", CL_MEM_READ_ONLY, m_BVH.m_Triangles.size() * sizeof(Triangle)));
 	VERIFY(m_OCL.AddBuffer("materials", CL_MEM_READ_ONLY, m_Materials.size() * sizeof(Material)));
-	VERIFY(m_OCL.AddBuffer("transforms", CL_MEM_READ_ONLY, m_Transforms.size() * sizeof(glm::mat4)));
+	VERIFY(m_OCL.AddBuffer("transforms", CL_MEM_READ_ONLY, m_BVH.m_Transforms.size() * sizeof(glm::mat4)));
+	VERIFY(m_OCL.AddBuffer("bvh", CL_MEM_READ_ONLY, m_BVH.m_BVHLinearNodes.size() * sizeof(BVH::BVHLinearNode)));
 	VERIFY(m_OCL.AddBuffer("stats", CL_MEM_READ_WRITE, sizeof(m_RenderStats)));
 
 	return true;
@@ -88,9 +94,10 @@ bool Application::SetKernelArgs()
 	VERIFY(m_OCL.SetKernelArg(11, m_NTriangles));
 	VERIFY(m_OCL.SetKernelArg(12, "materials"));
 	VERIFY(m_OCL.SetKernelArg(13, "transforms"));
-	VERIFY(m_OCL.SetKernelArg(14, "stats"));
-	VERIFY(m_OCL.SetKernelArg(17, props.TileWidth));
-	VERIFY(m_OCL.SetKernelArg(18, props.TileHeight));
+	VERIFY(m_OCL.SetKernelArg(14, "bvh"));
+	VERIFY(m_OCL.SetKernelArg(15, "stats"));
+	VERIFY(m_OCL.SetKernelArg(18, props.TileWidth));
+	VERIFY(m_OCL.SetKernelArg(19, props.TileHeight));
 
 	return true;
 }
@@ -102,10 +109,11 @@ bool Application::Render()
 	m_RenderStart = clock();
 
 	// Write scene data to OpenCL buffers
-	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_Meshes[0].GetVerticesPtr()->size() * sizeof(cl_float3), m_Meshes[0].GetVerticesPtr()->data()));
-	VERIFY(m_OCL.QueueWrite("triangles", CL_TRUE, 0, m_Meshes[0].GetTrianglesPtr()->size() * sizeof(Triangle), m_Meshes[0].GetTrianglesPtr()->data()));
+	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_BVH.m_Vertices.size() * sizeof(cl_float3), m_BVH.m_Vertices.data()));
+	VERIFY(m_OCL.QueueWrite("triangles", CL_TRUE, 0, m_BVH.m_Triangles.size() * sizeof(Triangle), m_BVH.m_Triangles.data()));
 	VERIFY(m_OCL.QueueWrite("materials", CL_TRUE, 0, m_Materials.size() * sizeof(Material), m_Materials.data()));
-	VERIFY(m_OCL.QueueWrite("transforms", CL_TRUE, 0, m_Transforms.size() * sizeof(glm::mat4), m_Transforms.data()));
+	VERIFY(m_OCL.QueueWrite("transforms", CL_TRUE, 0, m_BVH.m_Transforms.size() * sizeof(glm::mat4), m_BVH.m_Transforms.data()));
+	VERIFY(m_OCL.QueueWrite("bvh", CL_TRUE, 0, m_BVH.m_BVHLinearNodes.size() * sizeof(BVH::BVHLinearNode), m_BVH.m_BVHLinearNodes.data()));
 
 	Image::Props props = m_Image.GetProps();
 	// Execute kernel for each tile
@@ -122,8 +130,8 @@ bool Application::Render()
 		cl_uint yOffset = tileY * props.TileHeight;
 
 		// Send per-tile offsets to OpenCL device
-		VERIFY(m_OCL.SetKernelArg(15, xOffset));
-		VERIFY(m_OCL.SetKernelArg(16, yOffset));
+		VERIFY(m_OCL.SetKernelArg(16, xOffset));
+		VERIFY(m_OCL.SetKernelArg(17, yOffset));
 
 		// Execute kernel
 		VERIFY(m_OCL.QueueKernel(NULL, m_GlobalWorkSize, m_LocalWorkSize));
@@ -143,6 +151,7 @@ bool Application::Render()
 				m_Image.m_Pixels[y][x] = tile.Pixels[j * props.TileWidth + i];
 			}
 		}
+		std::cout << "Done tile " << k + 1 << " of " << props.nColumns * props.nRows << std::endl;
 	}
 
 	// clock_t timeEnd = clock();

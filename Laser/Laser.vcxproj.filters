@@ -52,6 +52,8 @@
     <None Include="cl\RenderStats.cl" />
     <None Include="cl\Random.cl" />
     <None Include="cl\Transform.cl" />
+    <None Include="cl\BVH.cl" />
+    <None Include="cl\Bounds.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Triangle.h">

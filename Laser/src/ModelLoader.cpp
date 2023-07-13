@@ -56,6 +56,13 @@ TriangleMesh ModelLoader::ProcessAssimpMesh(aiMesh* assimpMesh, const aiScene* a
         vertex.Position.y = assimpMesh->mVertices[i].y;
         vertex.Position.z = assimpMesh->mVertices[i].z;
 
+        if (assimpMesh->mNormals)
+        {
+            vertex.Normal.x = assimpMesh->mNormals[i].x;
+            vertex.Normal.y = assimpMesh->mNormals[i].y;
+            vertex.Normal.z = assimpMesh->mNormals[i].z;
+        }
+
         vertices.push_back(vertex);
     }
 

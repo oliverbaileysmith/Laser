@@ -39,7 +39,7 @@ bool Application::Init()
 	m_Image.SetTileRowsAndColumns(nRows, nColumns);
 
 	// Load geometry
-	VERIFY(LoadModel("res/models/cube.obj"));
+	VERIFY(LoadModel("res/models/utah-teapot.obj"));
 
 	// Set materials
 	m_Materials.resize(5);
@@ -54,7 +54,7 @@ bool Application::Init()
 	Transform t;
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = t.Generate(glm::vec3(-0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.5f));
+	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.2f));
 
 	// Construct BVH
 	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);

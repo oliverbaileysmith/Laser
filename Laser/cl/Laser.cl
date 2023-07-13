@@ -39,13 +39,17 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 		{
 			bool frontFace = dot(ray.dir, isect.N) < 0.0f;
 			float refractiveIndexRatio = frontFace ? (1.0f / material.RefractiveIndex) : material.RefractiveIndex;
-
-			ray.dir = calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
 			
 			if (frontFace)
+			{
+				ray.dir = calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
 				ray.orig = isect.P - isect.N * EPSILON;
+			}
 			else
-				ray.orig += isect.P + isect.N * EPSILON;
+			{
+				ray.dir = -calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
+				ray.orig = isect.P + isect.N * EPSILON;
+			}
 
 			// accumulate color
 			color += mask * material.Emission;

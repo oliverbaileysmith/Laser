@@ -41,7 +41,7 @@ float3 calcRefractionDirection(struct Intersection* isect, float3* incident, flo
 	float3 n = isect->N;
 	float3 i = *incident;
 
-	float cosTheta = fmin(dot(-i, n), 1.0f);
+	float cosTheta = dot(-i, n);
 	float3 rOutPerp = refractiveIndexRatio * (i + cosTheta * n);
 	float3 rOutParallel = -sqrt(fabs(1.0f - pow(length(rOutPerp), 2.0f))) * n;
 

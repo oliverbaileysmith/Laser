@@ -1,7 +1,7 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
 __constant unsigned int SAMPLES = 64;
-__constant unsigned int MAX_DEPTH = 8;
+__constant unsigned int MAX_DEPTH = 16;
 
 #include "Ray.cl"
 #include "Triangle.cl"
@@ -40,15 +40,34 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 			bool frontFace = dot(ray.dir, isect.N) < 0.0f;
 			float refractiveIndexRatio = frontFace ? (1.0f / material.RefractiveIndex) : material.RefractiveIndex;
 			
-			if (frontFace)
+			float cosTheta = dot(-ray.dir, isect.N);
+			float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+
+            // Schlick's approximation for Fresnel effect
+            //float r0 = (1.0f - refractiveIndexRatio) / (1.0f + refractiveIndexRatio);
+            //r0 = r0*r0;
+            //float reflectance = r0 + (1.0f - r0) * pow((1.0f - cosTheta), 5.0f);
+
+			// Total internal reflection
+			if (refractiveIndexRatio * sinTheta > 1.0f /*|| reflectance > getRandom(seed0, seed1)*/)
 			{
-				ray.dir = calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
-				ray.orig = isect.P - isect.N * EPSILON;
+				ray.dir = normalize(ray.dir - 2.0f * dot(ray.dir, isect.N) * isect.N);
+				ray.orig = isect.P + isect.N * EPSILON;
 			}
+
+			// Refract
 			else
 			{
-				ray.dir = -calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
-				ray.orig = isect.P + isect.N * EPSILON;
+				if (frontFace)
+				{
+					ray.dir = calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
+					ray.orig = isect.P - isect.N * EPSILON;
+				}
+				else
+				{
+					ray.dir = -calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
+					ray.orig = isect.P + isect.N * EPSILON;
+				}
 			}
 
 			// accumulate color

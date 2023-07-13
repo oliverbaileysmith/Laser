@@ -38,21 +38,22 @@ bool Application::Init()
 	m_Image.SetTileRowsAndColumns(nRows, nColumns);
 
 	// Load geometry
-	VERIFY(LoadModel("res/models/utah-teapot.obj"));
+	VERIFY(LoadModel("res/models/cube.obj"));
 
 	// Set materials
 	m_Materials.resize(5);
-	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false }; // white
-	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false }; // red
-	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false }; // green
-	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false }; // light
-	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true }; // metal/mirror
+	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // white
+	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // red
+	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // green
+	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false, false, 0.0f }; // light
+	//m_Materials[4] = { {0.8f, 0.5f, 0.2f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
+	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
 
 	// Set transforms
 	Transform t;
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f));
+	m_Transforms[1] = t.Generate(glm::vec3(-0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.5f));
 
 	// Construct BVH
 	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);

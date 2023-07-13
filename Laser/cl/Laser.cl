@@ -1,7 +1,7 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant unsigned int SAMPLES = 32;
-__constant unsigned int MAX_DEPTH = 4;
+__constant unsigned int SAMPLES = 64;
+__constant unsigned int MAX_DEPTH = 8;
 
 #include "Ray.cl"
 #include "Triangle.cl"
@@ -33,22 +33,48 @@ float3 trace(struct Ray* primaryRay, __global float3* vertices,
 
 		// Local copy of material
 		struct Material material = materials[isect.MaterialIndex];
-		
+
+		// Update ray direction for refraction
+		if (material.IsGlass)
+		{
+			bool frontFace = dot(ray.dir, isect.N) < 0.0f;
+			float refractiveIndexRatio = frontFace ? (1.0f / material.RefractiveIndex) : material.RefractiveIndex;
+
+			ray.dir = calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
+			
+			if (frontFace)
+				ray.orig = isect.P - isect.N * EPSILON;
+			else
+				ray.orig += isect.P + isect.N * EPSILON;
+
+			// accumulate color
+			color += mask * material.Emission;
+			mask *= material.Albedo;
+		}
+
 		// Update ray direction for next bounce using specular reflection
-		if (material.IsMetal)
+		else if (material.IsMetal)
+		{
 			ray.dir = calcSpecularReflectionDirection(&isect, &ray.dir);
+			ray.orig = isect.P + isect.N * EPSILON;
 
-		// Update ray direction for next bounce using diffuse reflection
+			// accumulate color
+			color += mask * material.Emission;
+			mask *= material.Albedo;
+			mask *= dot(ray.dir, isect.N);
+		}
+
+		// Update ray for next bounce using diffuse reflection
 		else
-			ray.dir = calcDiffuseReflectionDirection(&isect, seed0, seed1);\
+		{
+			ray.dir = calcDiffuseReflectionDirection(&isect, seed0, seed1);
+			ray.orig = isect.P + isect.N * EPSILON;
 
-		// Update ray origin for next bounce
-		ray.orig = isect.P + isect.N * EPSILON;
-
-		// accumulate color
-		color += mask * material.Emission;
-		mask *= material.Albedo;
-		mask *= dot(ray.dir, isect.N);
+			// accumulate color
+			color += mask * material.Emission;
+			mask *= material.Albedo;
+			mask *= dot(ray.dir, isect.N);
+		}
 	}
 	return color;
 }

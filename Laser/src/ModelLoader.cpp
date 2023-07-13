@@ -5,6 +5,8 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
+#include "Vertex.h"
+
 std::vector<TriangleMesh> ModelLoader::LoadModel(const std::string& filepath)
 {
     std::vector<TriangleMesh> meshes;
@@ -43,16 +45,16 @@ void ModelLoader::ProcessAssimpNode(aiNode* assimpNode, const aiScene* assimpSce
 
 TriangleMesh ModelLoader::ProcessAssimpMesh(aiMesh* assimpMesh, const aiScene* assimpScene)
 {
-    std::vector<cl_float3> vertices;
+    std::vector<Vertex> vertices;
     std::vector<Triangle> triangles;
 
     // Process vertex positions
     for (uint32_t i = 0; i < assimpMesh->mNumVertices; i++)
     {
-        cl_float3 vertex;
-        vertex.x = assimpMesh->mVertices[i].x;
-        vertex.y = assimpMesh->mVertices[i].y;
-        vertex.z = assimpMesh->mVertices[i].z;
+        Vertex vertex;
+        vertex.Position.x = assimpMesh->mVertices[i].x;
+        vertex.Position.y = assimpMesh->mVertices[i].y;
+        vertex.Position.z = assimpMesh->mVertices[i].z;
 
         vertices.push_back(vertex);
     }

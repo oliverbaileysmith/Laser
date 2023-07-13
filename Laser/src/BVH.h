@@ -3,6 +3,7 @@
 #include <CL/cl.hpp>
 #include <glm/glm.hpp>
 
+#include "Vertex.h"
 #include "Triangle.h"
 #include "Bounds.h"
 
@@ -55,7 +56,7 @@ public:
 	/********** BVH **********/
 public:
 	BVH();
-	BVH(const std::vector<cl_float3>& vertices, const std::vector<Triangle>& triangles, const std::vector<glm::mat4>& transforms);
+	BVH(const std::vector<Vertex>& vertices, const std::vector<Triangle>& triangles, const std::vector<glm::mat4>& transforms);
 	~BVH();
 
 private:
@@ -68,7 +69,7 @@ private:
 
 public:
 	// Scene data
-	std::vector<cl_float3> m_Vertices;
+	std::vector<Vertex> m_Vertices;
 	std::vector<Triangle> m_Triangles;
 	std::vector<glm::mat4> m_Transforms;
 	std::vector<BVHLinearNode> m_BVHLinearNodes;

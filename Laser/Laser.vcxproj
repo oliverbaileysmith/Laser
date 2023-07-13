@@ -122,6 +122,7 @@
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Triangle.h" />
     <ClInclude Include="src\TriangleMesh.h" />
+    <ClInclude Include="src\Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

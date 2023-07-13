@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "Vertex.h"
 #include "ModelLoader.h"
 #include "Transform.h"
 #include "BVH.h"
@@ -64,7 +65,7 @@ bool Application::Init()
 bool Application::GenBuffers()
 {
 	VERIFY(m_OCL.AddBuffer("output", CL_MEM_WRITE_ONLY, m_GlobalWorkSize * sizeof(cl_float3)));
-	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_BVH.m_Vertices.size() * sizeof(cl_float3)));
+	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_BVH.m_Vertices.size() * sizeof(Vertex)));
 	VERIFY(m_OCL.AddBuffer("triangles", CL_MEM_READ_ONLY, m_BVH.m_Triangles.size() * sizeof(Triangle)));
 	VERIFY(m_OCL.AddBuffer("materials", CL_MEM_READ_ONLY, m_Materials.size() * sizeof(Material)));
 	VERIFY(m_OCL.AddBuffer("transforms", CL_MEM_READ_ONLY, m_BVH.m_Transforms.size() * sizeof(glm::mat4)));
@@ -107,7 +108,7 @@ bool Application::Render()
 	m_RenderStart = clock();
 
 	// Write scene data to OpenCL buffers
-	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_BVH.m_Vertices.size() * sizeof(cl_float3), m_BVH.m_Vertices.data()));
+	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_BVH.m_Vertices.size() * sizeof(Vertex), m_BVH.m_Vertices.data()));
 	VERIFY(m_OCL.QueueWrite("triangles", CL_TRUE, 0, m_BVH.m_Triangles.size() * sizeof(Triangle), m_BVH.m_Triangles.data()));
 	VERIFY(m_OCL.QueueWrite("materials", CL_TRUE, 0, m_Materials.size() * sizeof(Material), m_Materials.data()));
 	VERIFY(m_OCL.QueueWrite("transforms", CL_TRUE, 0, m_BVH.m_Transforms.size() * sizeof(glm::mat4), m_BVH.m_Transforms.data()));

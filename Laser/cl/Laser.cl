@@ -9,7 +9,7 @@ __constant unsigned int MAX_DEPTH = 8;
 #include "Transform.cl"
 #include "BVH.cl"
 
-float3 trace(struct Ray* primaryRay, __global float3* vertices,
+float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 	__global struct Triangle* triangles, unsigned int n_Triangles,
 	__global struct Material* materials, __global mat4* transforms,
 	__global struct BVHLinearNode* bvh,	__global struct RenderStats* renderStats,
@@ -82,7 +82,7 @@ float3 trace(struct Ray* primaryRay, __global float3* vertices,
 __kernel void Laser(__global float3* output, unsigned int imageWidth,
 	unsigned int imageHeight, float aspectRatio, float viewportWidth,
 	float viewportHeight, float focalLength, float3 cameraOrigin,
-	float3 upperLeftCorner,	__global float3* vertices,
+	float3 upperLeftCorner,	__global struct Vertex* vertices,
 	__global struct Triangle* triangles, unsigned int n_Triangles,
 	__global struct Material* materials, __global mat4* transforms,
 	__global struct BVHLinearNode* bvh, __global struct RenderStats* renderStats,

@@ -1,4 +1,5 @@
 #include "Bounds.cl"
+#include "Vertex.cl"
 
 struct BVHLinearNode
 {
@@ -9,7 +10,7 @@ struct BVHLinearNode
 	uint SplitAxis;
 };
 
-bool intersectBVH(struct Ray* ray, __global float3* vertices,
+bool intersectBVH(struct Ray* ray, __global struct Vertex* vertices,
 	__global struct Triangle* triangles, __global struct Material* materials,
 	__global mat4* transforms, __global struct BVHLinearNode* bvh, float* t,
 	float3* n, struct Intersection* isect,
@@ -49,9 +50,9 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 					transform[3] = transforms[triangles[triIndex].Transform][3];
 
 					// Triangle vertices
-					float3 v0 = vertices[triangles[triIndex].v0];
-					float3 v1 = vertices[triangles[triIndex].v1];
-					float3 v2 = vertices[triangles[triIndex].v2];
+					float3 v0 = vertices[triangles[triIndex].v0].Position;
+					float3 v1 = vertices[triangles[triIndex].v1].Position;
+					float3 v2 = vertices[triangles[triIndex].v2].Position;
 		
 					// Transformed vertices
 					v0 = multMat4Point(&transform, &v0);

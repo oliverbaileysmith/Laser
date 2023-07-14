@@ -19,15 +19,17 @@ float3 calcSpecularReflectionDirection(float3* normal, float3* incident)
 	return normalize(i - 2.0f * dot(i, n) * n);
 }
 
-float3 calcDiffuseReflectionDirection(struct Intersection* isect, unsigned int* seed0, unsigned int* seed1)
+float3 calcDiffuseReflectionDirection(float3* normal, unsigned int* seed0, unsigned int* seed1)
 {
+	float3 n = *normal;
+
 	// compute two random numbers to pick a random point on the hemisphere above the hitpoint
 	float rand1 = 2.0f * PI * getRandom(seed0, seed1);
 	float rand2 = getRandom(seed0, seed1);
 	float rand2s = sqrt(rand2);
 
 	// create a local orthogonal coordinate frame centered at the hitpoint
-	float3 w = isect->N;
+	float3 w = n;
 	float3 axis = fabs(w.x) > 0.1f ? (float3)(0.0f, 1.0f, 0.0f) : (float3)(1.0f, 0.0f, 0.0f);
 	float3 u = normalize(cross(axis, w));
 	float3 v = cross(w, u);
@@ -36,9 +38,9 @@ float3 calcDiffuseReflectionDirection(struct Intersection* isect, unsigned int* 
 	return normalize(u * cos(rand1)*rand2s + v*sin(rand1)*rand2s + w*sqrt(1.0f - rand2));
 }
 
-float3 calcRefractionDirection(struct Intersection* isect, float3* incident, float refractiveIndexRatio)
+float3 calcRefractionDirection(float3* normal, float3* incident, float refractiveIndexRatio)
 {
-	float3 n = isect->N;
+	float3 n = *normal;
 	float3 i = *incident;
 
 	float cosTheta = dot(-i, n);

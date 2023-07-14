@@ -1,7 +1,7 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
 __constant unsigned int SAMPLES = 64;
-__constant unsigned int MAX_DEPTH = 8;
+__constant unsigned int MAX_DEPTH = 16;
 
 #include "Ray.cl"
 #include "Triangle.cl"
@@ -67,16 +67,58 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 			// Return background color
 			return (float3)(0.2f, 0.2f, 0.2f);
 
+		// Compute shading normal
+		float3 shadingNormal;
+
+		float3 v0n = vertices[triangles[isect.TriangleIndex].v0].Normal;
+		float3 v1n = vertices[triangles[isect.TriangleIndex].v1].Normal;
+		float3 v2n = vertices[triangles[isect.TriangleIndex].v2].Normal;
+
+		// Check if normals were provided in model
+		bool normalsNotAvailable = true;
+		float3 degenerateNormal = (float3)(0.0f, 0.0f, 0.0f);
+
+		int3 equal = isequal(v0n, degenerateNormal);
+		normalsNotAvailable &= equal.x && equal.y && equal.z;
+		equal = isequal(v1n, degenerateNormal);
+		normalsNotAvailable &= equal.x && equal.y && equal.z;
+		equal = isequal(v2n, degenerateNormal);
+		normalsNotAvailable &= equal.x && equal.y && equal.z;
+
+		// If at least one vertex normal is degenerate (0,0,0)
+		if (normalsNotAvailable)
+			// Use calculated normal from triangle intersection
+			shadingNormal = isect.N;
+		
+		// If vertex normals are provided
+		else
+		{
+			// Local copy of transform
+			mat4 transform;
+			transform[0] = transforms[triangles[isect.TriangleIndex].Transform][0];
+			transform[1] = transforms[triangles[isect.TriangleIndex].Transform][1];
+			transform[2] = transforms[triangles[isect.TriangleIndex].Transform][2];
+			transform[3] = transforms[triangles[isect.TriangleIndex].Transform][3];
+
+			// Interpolate normal for smooth shading
+			shadingNormal = v0n * (1.0f - isect.u - isect.v);
+			shadingNormal += v1n * isect.u;
+			shadingNormal += v2n * isect.v;
+			
+			// Transform interpolated normal to world space
+			shadingNormal = normalize(multMat4Normal(&transform, &shadingNormal));
+		}
+
 		// Local copy of material
 		struct Material material = materials[triangles[isect.TriangleIndex].Material];
 
 		// Update ray direction for refraction
 		if (material.IsGlass)
 		{
-			bool frontFace = dot(ray.dir, isect.N) < 0.0f;
+			bool frontFace = dot(ray.dir, shadingNormal) < 0.0f;
 			float refractiveIndexRatio = frontFace ? (1.0f / material.RefractiveIndex) : material.RefractiveIndex;
 				
-			float cosTheta = dot(-ray.dir, isect.N);
+			float cosTheta = dot(-ray.dir, shadingNormal);
 			float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
 
             // Schlick's approximation for Fresnel effect
@@ -87,8 +129,8 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 			// Total internal reflection
 			if (refractiveIndexRatio * sinTheta > 1.0f /*|| reflectance > getRandom(seed0, seed1)*/)
 			{
-				ray.dir = normalize(ray.dir - 2.0f * dot(ray.dir, isect.N) * isect.N);
-				ray.orig = isect.P + isect.N * EPSILON;
+				ray.dir = normalize(ray.dir - 2.0f * dot(ray.dir, shadingNormal) * shadingNormal);
+				ray.orig = isect.P + shadingNormal * EPSILON;
 			}
 
 			// Refract
@@ -96,13 +138,13 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 			{
 				if (frontFace)
 				{
-					ray.dir = calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
-					ray.orig = isect.P - isect.N * EPSILON;
+					ray.dir = calcRefractionDirection(&shadingNormal, &ray.dir, refractiveIndexRatio);
+					ray.orig = isect.P - shadingNormal * EPSILON;
 				}
 				else
 				{
-					ray.dir = -calcRefractionDirection(&isect, &ray.dir, refractiveIndexRatio);
-					ray.orig = isect.P + isect.N * EPSILON;
+					ray.dir = -calcRefractionDirection(&shadingNormal, &ray.dir, refractiveIndexRatio);
+					ray.orig = isect.P + shadingNormal * EPSILON;
 				}
 			}
 
@@ -114,22 +156,6 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 		// Update ray direction for next bounce using specular reflection
 		else if (material.IsMetal)
 		{
-			mat4 transform;
-			transform[0] = transforms[triangles[isect.TriangleIndex].Transform][0];
-			transform[1] = transforms[triangles[isect.TriangleIndex].Transform][1];
-			transform[2] = transforms[triangles[isect.TriangleIndex].Transform][2];
-			transform[3] = transforms[triangles[isect.TriangleIndex].Transform][3];
-
-			float3 v0n = vertices[triangles[isect.TriangleIndex].v0].Normal;
-			float3 v1n = vertices[triangles[isect.TriangleIndex].v1].Normal;
-			float3 v2n = vertices[triangles[isect.TriangleIndex].v2].Normal;
-
-			float3 shadingNormal = v0n * (1.0f - isect.u - isect.v);
-			shadingNormal += v1n * isect.u;
-			shadingNormal += v2n * isect.v;
-
-			shadingNormal = normalize(multMat4Normal(&transform, &shadingNormal));
-
 			ray.dir = calcSpecularReflectionDirection(&shadingNormal, &ray.dir);
 			ray.orig = isect.P + shadingNormal * EPSILON;
 
@@ -142,13 +168,13 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 		// Update ray for next bounce using diffuse reflection
 		else
 		{
-			ray.dir = calcDiffuseReflectionDirection(&isect, seed0, seed1);
-			ray.orig = isect.P + isect.N * EPSILON;
+			ray.dir = calcDiffuseReflectionDirection(&shadingNormal, seed0, seed1);
+			ray.orig = isect.P + shadingNormal * EPSILON;
 
 			// accumulate color
 			color += mask * material.Emission;
 			mask *= material.Albedo;
-			mask *= dot(ray.dir, isect.N);
+			mask *= dot(ray.dir, shadingNormal);
 		}
 	}
 	return color;

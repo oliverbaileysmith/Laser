@@ -1,13 +1,49 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
 __constant unsigned int SAMPLES = 64;
-__constant unsigned int MAX_DEPTH = 16;
+__constant unsigned int MAX_DEPTH = 8;
 
 #include "Ray.cl"
 #include "Triangle.cl"
 #include "Material.cl"
 #include "Transform.cl"
 #include "BVH.cl"
+
+float3 tracedebug(struct Ray* primaryRay, __global struct Vertex* vertices,
+	__global struct Triangle* triangles, unsigned int n_Triangles,
+	__global struct Material* materials, __global mat4* transforms,
+	__global struct BVHLinearNode* bvh,	__global struct RenderStats* renderStats,
+	unsigned int* seed0, unsigned int* seed1)
+{
+	struct Ray ray = *primaryRay;
+	float t = INFINITY;
+	float3 n;
+	struct Intersection isect;
+
+	if (!intersectBVH(&ray, vertices, triangles, materials, transforms, bvh, &t, &n, &isect, renderStats))
+		// Return background color
+		return (float3)(0.2f, 0.2f, 0.2f);
+
+	//return (float3) (isect.u, isect.v, 1.0f - isect.u - isect.v); // visualize barycentric coords
+
+	mat4 transform;
+	transform[0] = transforms[triangles[isect.TriangleIndex].Transform][0];
+	transform[1] = transforms[triangles[isect.TriangleIndex].Transform][1];
+	transform[2] = transforms[triangles[isect.TriangleIndex].Transform][2];
+	transform[3] = transforms[triangles[isect.TriangleIndex].Transform][3];
+
+	float3 v0n = vertices[triangles[isect.TriangleIndex].v0].Normal;
+	float3 v1n = vertices[triangles[isect.TriangleIndex].v1].Normal;
+	float3 v2n = vertices[triangles[isect.TriangleIndex].v2].Normal;
+
+	float3 shadingNormal = v0n * (1.0f - isect.u - isect.v);
+	shadingNormal += v1n * isect.u;
+	shadingNormal += v2n * isect.v;
+
+	shadingNormal = normalize(multMat4Normal(&transform, &shadingNormal));
+
+	return shadingNormal * 0.5f + 0.5f; // visualize normals
+}
 
 float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 	__global struct Triangle* triangles, unsigned int n_Triangles,
@@ -32,14 +68,14 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 			return (float3)(0.2f, 0.2f, 0.2f);
 
 		// Local copy of material
-		struct Material material = materials[isect.MaterialIndex];
+		struct Material material = materials[triangles[isect.TriangleIndex].Material];
 
 		// Update ray direction for refraction
 		if (material.IsGlass)
 		{
 			bool frontFace = dot(ray.dir, isect.N) < 0.0f;
 			float refractiveIndexRatio = frontFace ? (1.0f / material.RefractiveIndex) : material.RefractiveIndex;
-			
+				
 			float cosTheta = dot(-ray.dir, isect.N);
 			float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
 
@@ -78,13 +114,29 @@ float3 trace(struct Ray* primaryRay, __global struct Vertex* vertices,
 		// Update ray direction for next bounce using specular reflection
 		else if (material.IsMetal)
 		{
-			ray.dir = calcSpecularReflectionDirection(&isect, &ray.dir);
-			ray.orig = isect.P + isect.N * EPSILON;
+			mat4 transform;
+			transform[0] = transforms[triangles[isect.TriangleIndex].Transform][0];
+			transform[1] = transforms[triangles[isect.TriangleIndex].Transform][1];
+			transform[2] = transforms[triangles[isect.TriangleIndex].Transform][2];
+			transform[3] = transforms[triangles[isect.TriangleIndex].Transform][3];
+
+			float3 v0n = vertices[triangles[isect.TriangleIndex].v0].Normal;
+			float3 v1n = vertices[triangles[isect.TriangleIndex].v1].Normal;
+			float3 v2n = vertices[triangles[isect.TriangleIndex].v2].Normal;
+
+			float3 shadingNormal = v0n * (1.0f - isect.u - isect.v);
+			shadingNormal += v1n * isect.u;
+			shadingNormal += v2n * isect.v;
+
+			shadingNormal = normalize(multMat4Normal(&transform, &shadingNormal));
+
+			ray.dir = calcSpecularReflectionDirection(&shadingNormal, &ray.dir);
+			ray.orig = isect.P + shadingNormal * EPSILON;
 
 			// accumulate color
 			color += mask * material.Emission;
 			mask *= material.Albedo;
-			mask *= dot(ray.dir, isect.N);
+			mask *= dot(ray.dir, shadingNormal);
 		}
 
 		// Update ray for next bounce using diffuse reflection
@@ -111,7 +163,7 @@ __kernel void Laser(__global float3* output, unsigned int imageWidth,
 	__global struct BVHLinearNode* bvh, __global struct RenderStats* renderStats,
 	unsigned int xOffset, unsigned int yOffset,
 	unsigned int tileWidth, unsigned int tileHeight)
-{
+{	
 	// Calculate pixel coordinates
 	const unsigned int workItemID = get_global_id(0);
 	unsigned int x = xOffset + (workItemID % tileWidth);
@@ -144,4 +196,6 @@ __kernel void Laser(__global float3* output, unsigned int imageWidth,
 	for (int i = 0; i < SAMPLES; i++)
 		color += trace(&primaryRay, vertices, triangles, n_Triangles, materials, transforms, bvh, renderStats, &seed0, &seed1) * invSamples;
 	output[workItemID] = color;
+
+	//output[workItemID] = tracedebug(&primaryRay, vertices, triangles, n_Triangles, materials, transforms, bvh, renderStats, &seed0, &seed1);
 }

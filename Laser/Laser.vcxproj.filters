@@ -54,6 +54,7 @@
     <None Include="cl\Transform.cl" />
     <None Include="cl\BVH.cl" />
     <None Include="cl\Bounds.cl" />
+    <None Include="cl\Vertex.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Triangle.h">

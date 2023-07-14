@@ -11,9 +11,9 @@ struct Material
 	char dummy[4];
 };
 
-float3 calcSpecularReflectionDirection(struct Intersection* isect, float3* incident)
+float3 calcSpecularReflectionDirection(float3* normal, float3* incident)
 {
-	float3 n = isect->N;
+	float3 n = *normal;
 	float3 i = *incident;
 
 	return normalize(i - 2.0f * dot(i, n) * n);

@@ -58,18 +58,23 @@ bool intersectBVH(struct Ray* ray, __global struct Vertex* vertices,
 					v0 = multMat4Point(&transform, &v0);
 					v1 = multMat4Point(&transform, &v1);
 					v2 = multMat4Point(&transform, &v2);
+
+					float u, v;
 					
 					// If ray intersects triangle
-					if (intersectTriangle(ray, v0, v1, v2, &currentT, n, renderStats))
+					if (intersectTriangle(ray, v0, v1, v2, &currentT, n, &u, &v, renderStats))
 					{
 						hit = true;
-						// Update t if closer hit
+						
+						// Update intersection if closer hit
 						if (currentT != 0.0f && currentT < *t)
 						{
 							*t = currentT;
 							isect->P = ray->orig + *t * ray->dir;
 							isect->N = *n;
-							isect->MaterialIndex = triangles[triIndex].Material;
+							isect->TriangleIndex = triIndex;
+							isect->u = u;
+							isect->v = v;
 						}
 					}
 				}

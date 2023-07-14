@@ -109,6 +109,7 @@
     <None Include="cl\Triangle.cl" />
     <None Include="cl\Laser.cl" />
     <None Include="cl\Material.cl" />
+    <None Include="cl\Vertex.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application.h" />

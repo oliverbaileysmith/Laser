@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "Vertex.h"
 #include "ModelLoader.h"
 #include "Transform.h"
 #include "BVH.h"
@@ -41,17 +42,20 @@ bool Application::Init()
 	VERIFY(LoadModel("res/models/utah-teapot.obj"));
 
 	// Set materials
-	m_Materials.resize(4);
-	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f} }; // white
-	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // red
-	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f} }; // green
-	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f} }; // light
+	m_Materials.resize(5);
+	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // white
+	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // red
+	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // green
+	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false, false, 0.0f }; // light
+	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
+	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
+	//m_Materials[4] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
 
 	// Set transforms
 	Transform t;
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = t.Generate(glm::vec3(0.0f, -1.5f, -1.50f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.4f));
+	m_Transforms[1] = t.Generate(glm::vec3(0.5f, 0.5f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
 
 	// Construct BVH
 	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);
@@ -62,7 +66,7 @@ bool Application::Init()
 bool Application::GenBuffers()
 {
 	VERIFY(m_OCL.AddBuffer("output", CL_MEM_WRITE_ONLY, m_GlobalWorkSize * sizeof(cl_float3)));
-	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_BVH.m_Vertices.size() * sizeof(cl_float3)));
+	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_BVH.m_Vertices.size() * sizeof(Vertex)));
 	VERIFY(m_OCL.AddBuffer("triangles", CL_MEM_READ_ONLY, m_BVH.m_Triangles.size() * sizeof(Triangle)));
 	VERIFY(m_OCL.AddBuffer("materials", CL_MEM_READ_ONLY, m_Materials.size() * sizeof(Material)));
 	VERIFY(m_OCL.AddBuffer("transforms", CL_MEM_READ_ONLY, m_BVH.m_Transforms.size() * sizeof(glm::mat4)));
@@ -105,7 +109,7 @@ bool Application::Render()
 	m_RenderStart = clock();
 
 	// Write scene data to OpenCL buffers
-	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_BVH.m_Vertices.size() * sizeof(cl_float3), m_BVH.m_Vertices.data()));
+	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_BVH.m_Vertices.size() * sizeof(Vertex), m_BVH.m_Vertices.data()));
 	VERIFY(m_OCL.QueueWrite("triangles", CL_TRUE, 0, m_BVH.m_Triangles.size() * sizeof(Triangle), m_BVH.m_Triangles.data()));
 	VERIFY(m_OCL.QueueWrite("materials", CL_TRUE, 0, m_Materials.size() * sizeof(Material), m_Materials.data()));
 	VERIFY(m_OCL.QueueWrite("transforms", CL_TRUE, 0, m_BVH.m_Transforms.size() * sizeof(glm::mat4), m_BVH.m_Transforms.data()));

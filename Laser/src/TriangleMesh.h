@@ -4,17 +4,18 @@
 
 #include <CL/cl.hpp>
 
+#include "Vertex.h"
 #include "Triangle.h"
 
 class TriangleMesh
 {
 public:
-	TriangleMesh(std::vector<cl_float3> vertices, std::vector<Triangle> triangles);
+	TriangleMesh(std::vector<Vertex> vertices, std::vector<Triangle> triangles);
 
-	const std::vector<cl_float3>* const GetVerticesPtr() const;
+	const std::vector<Vertex>* const GetVerticesPtr() const;
 	const std::vector<Triangle>* const GetTrianglesPtr() const;
 
 private:
-	std::vector<cl_float3> m_Vertices;
+	std::vector<Vertex> m_Vertices;
 	std::vector<Triangle> m_Triangles;
 };

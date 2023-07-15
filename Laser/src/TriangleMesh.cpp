@@ -1,6 +1,6 @@
 #include "TriangleMesh.h"
 
-TriangleMesh::TriangleMesh(std::vector<cl_float3> vertices, std::vector<Triangle> triangles)
+TriangleMesh::TriangleMesh(std::vector<Vertex> vertices, std::vector<Triangle> triangles)
     : m_Vertices(vertices), m_Triangles(triangles)
 {
     // TODO: Remove this
@@ -35,7 +35,7 @@ TriangleMesh::TriangleMesh(std::vector<cl_float3> vertices, std::vector<Triangle
     m_Triangles.push_back({ n + 8, n + 10, n + 11, 3, 0 });
 }
 
-const std::vector<cl_float3>* const TriangleMesh::GetVerticesPtr() const
+const std::vector<Vertex>* const TriangleMesh::GetVerticesPtr() const
 {
     return &m_Vertices;
 }

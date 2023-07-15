@@ -1,7 +1,7 @@
-struct Intersection
+typedef struct Intersection
 {
-	float3 P;
+	float3 P; 
 	float3 N;
-	float3 Albedo;
-	float3 Emission;
-};
+	float u, v; // Barycentric coordinates
+	uint TriangleIndex;
+} Intersection;

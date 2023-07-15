@@ -109,6 +109,7 @@
     <None Include="cl\Triangle.cl" />
     <None Include="cl\Laser.cl" />
     <None Include="cl\Material.cl" />
+    <None Include="cl\Vertex.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application.h" />
@@ -122,6 +123,7 @@
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Triangle.h" />
     <ClInclude Include="src\TriangleMesh.h" />
+    <ClInclude Include="src\Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

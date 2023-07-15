@@ -1,19 +1,19 @@
 #include "Bounds.cl"
 
-struct BVHLinearNode
+typedef struct BVHLinearNode
 {
-	struct Bounds Bounds;
+	Bounds Bounds;
 	uint SecondChildOffset; // First child is next node in array
 	uint FirstTriangle;
 	uint nTriangles;
 	uint SplitAxis;
-};
+} BVHLinearNode;
 
-bool intersectBVH(struct Ray* ray, __global float3* vertices,
-	__global struct Triangle* triangles, __global struct Material* materials,
-	__global mat4* transforms, __global struct BVHLinearNode* bvh, float* t,
-	float3* n, struct Intersection* isect,
-	__global struct RenderStats* renderStats)
+bool intersectBVH(Ray* ray, __global Vertex* vertices,
+	__global Triangle* triangles, __global Material* materials,
+	__global mat4* transforms, __global BVHLinearNode* bvh, float* t,
+	float3* n, Intersection* isect,
+	__global RenderStats* renderStats)
 {
 	bool hit = false;
 
@@ -28,7 +28,7 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 	
 	while (true)
 	{
-		struct BVHLinearNode node = bvh[current];
+		BVHLinearNode node = bvh[current];
 
 		// If ray hits current node
 		if (intersectBounds(ray, &node.Bounds))
@@ -49,27 +49,31 @@ bool intersectBVH(struct Ray* ray, __global float3* vertices,
 					transform[3] = transforms[triangles[triIndex].Transform][3];
 
 					// Triangle vertices
-					float3 v0 = vertices[triangles[triIndex].v0];
-					float3 v1 = vertices[triangles[triIndex].v1];
-					float3 v2 = vertices[triangles[triIndex].v2];
+					float3 v0 = vertices[triangles[triIndex].v0].Position;
+					float3 v1 = vertices[triangles[triIndex].v1].Position;
+					float3 v2 = vertices[triangles[triIndex].v2].Position;
 		
 					// Transformed vertices
 					v0 = multMat4Point(&transform, &v0);
 					v1 = multMat4Point(&transform, &v1);
 					v2 = multMat4Point(&transform, &v2);
+
+					float u, v;
 					
 					// If ray intersects triangle
-					if (intersectTriangle(ray, v0, v1, v2, &currentT, n, renderStats))
+					if (intersectTriangle(ray, v0, v1, v2, &currentT, n, &u, &v, renderStats))
 					{
 						hit = true;
-						// Update t if closer hit
+						
+						// Update intersection if closer hit
 						if (currentT != 0.0f && currentT < *t)
 						{
 							*t = currentT;
 							isect->P = ray->orig + *t * ray->dir;
 							isect->N = *n;
-							isect->Albedo = materials[triangles[triIndex].Material].Albedo;
-							isect->Emission = materials[triangles[triIndex].Material].Emission;
+							isect->TriangleIndex = triIndex;
+							isect->u = u;
+							isect->v = v;
 						}
 					}
 				}

@@ -56,7 +56,7 @@ BVH::BVH()
 {
 }
 
-BVH::BVH(const std::vector<cl_float3>& vertices, const std::vector<Triangle>& triangles, const std::vector<glm::mat4>& transforms)
+BVH::BVH(const std::vector<Vertex>& vertices, const std::vector<Triangle>& triangles, const std::vector<glm::mat4>& transforms)
 	: m_Vertices(vertices), m_Triangles(triangles), m_Transforms(transforms)
 {
 	// Ensure at least one triangle in the scene
@@ -187,9 +187,9 @@ cl_uint BVH::Flatten(BVHBuildNode* node, cl_uint* offset)
 
 Bounds BVH::CalcTriangleBounds(cl_uint tri) const
 {
-	cl_float3 v0 = m_Vertices[m_Triangles[tri].v0];
-	cl_float3 v1 = m_Vertices[m_Triangles[tri].v1];
-	cl_float3 v2 = m_Vertices[m_Triangles[tri].v2];
+	cl_float3 v0 = m_Vertices[m_Triangles[tri].v0].Position;
+	cl_float3 v1 = m_Vertices[m_Triangles[tri].v1].Position;
+	cl_float3 v2 = m_Vertices[m_Triangles[tri].v2].Position;
 
 	glm::vec3 glmv0 = { v0.x, v0.y, v0.z };
 	glm::vec3 glmv1 = { v1.x, v1.y, v1.z };

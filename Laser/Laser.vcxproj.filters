@@ -54,6 +54,7 @@
     <None Include="cl\Transform.cl" />
     <None Include="cl\BVH.cl" />
     <None Include="cl\Bounds.cl" />
+    <None Include="cl\Vertex.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Triangle.h">
@@ -87,6 +88,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\BVH.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

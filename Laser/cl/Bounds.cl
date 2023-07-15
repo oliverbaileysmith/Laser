@@ -1,10 +1,10 @@
-struct Bounds
+typedef struct Bounds
 {
 	float3 pMin;
 	float3 pMax;
-};
+} Bounds;
 
-bool intersectBounds(struct Ray* ray, struct Bounds* bounds)
+bool intersectBounds(Ray* ray, Bounds* bounds)
 {
     float t0 = 0;
     float t1 = INFINITY;

@@ -49,6 +49,7 @@ bool Application::Init()
 	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false, false, 0.0f }; // light
 	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
 	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
+	//m_Materials[4] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
 
 	// Set transforms
 	Transform t;

@@ -1,16 +1,16 @@
 #include "RenderStats.cl"
 
-struct Triangle
+typedef struct Triangle
 {
 	unsigned int v0;
 	unsigned int v1;
 	unsigned int v2;
 	unsigned int Material;
 	unsigned int Transform;
-};
+} Triangle;
 
-bool intersectTriangle(struct Ray* ray, float3 v0, float3 v1, float3 v2,
-	float* t, float3* n, float* u, float* v, __global struct RenderStats* renderStats)
+bool intersectTriangle(Ray* ray, float3 v0, float3 v1, float3 v2,
+	float* t, float3* n, float* u, float* v, __global RenderStats* renderStats)
 {
 	// Moller Trumbore from https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
 

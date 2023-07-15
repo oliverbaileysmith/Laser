@@ -1,20 +1,19 @@
 #include "Bounds.cl"
-#include "Vertex.cl"
 
-struct BVHLinearNode
+typedef struct BVHLinearNode
 {
-	struct Bounds Bounds;
+	Bounds Bounds;
 	uint SecondChildOffset; // First child is next node in array
 	uint FirstTriangle;
 	uint nTriangles;
 	uint SplitAxis;
-};
+} BVHLinearNode;
 
-bool intersectBVH(struct Ray* ray, __global struct Vertex* vertices,
-	__global struct Triangle* triangles, __global struct Material* materials,
-	__global mat4* transforms, __global struct BVHLinearNode* bvh, float* t,
-	float3* n, struct Intersection* isect,
-	__global struct RenderStats* renderStats)
+bool intersectBVH(Ray* ray, __global Vertex* vertices,
+	__global Triangle* triangles, __global Material* materials,
+	__global mat4* transforms, __global BVHLinearNode* bvh, float* t,
+	float3* n, Intersection* isect,
+	__global RenderStats* renderStats)
 {
 	bool hit = false;
 
@@ -29,7 +28,7 @@ bool intersectBVH(struct Ray* ray, __global struct Vertex* vertices,
 	
 	while (true)
 	{
-		struct BVHLinearNode node = bvh[current];
+		BVHLinearNode node = bvh[current];
 
 		// If ray hits current node
 		if (intersectBounds(ray, &node.Bounds))

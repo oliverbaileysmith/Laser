@@ -106,8 +106,8 @@ __kernel void Laser(__global float3* output, __global ImageProps* image,
 	Ray primaryRay;
 	primaryRay.orig = camera->Position;
 	primaryRay.dir = camera->UpperLeftCorner;
-	primaryRay.dir.x += fx * camera->ViewportWidth;
-	primaryRay.dir.y -= fy * camera->ViewportHeight;
+	primaryRay.dir += fx * camera->ViewportHorizontal;
+	primaryRay.dir -= fy * camera->ViewportVertical;
 	primaryRay.dir -= camera->Position;
 	primaryRay.dir = normalize(primaryRay.dir);
 

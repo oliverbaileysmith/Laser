@@ -91,6 +91,7 @@
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Bounds.cpp" />
     <ClCompile Include="src\BVH.cpp" />
+    <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\Image.cpp" />
     <ClCompile Include="src\Laser.cpp" />
     <ClCompile Include="src\ModelLoader.cpp" />
@@ -101,6 +102,8 @@
   <ItemGroup>
     <None Include="cl\Bounds.cl" />
     <None Include="cl\BVH.cl" />
+    <None Include="cl\Camera.cl" />
+    <None Include="cl\Image.cl" />
     <None Include="cl\Intersection.cl" />
     <None Include="cl\Random.cl" />
     <None Include="cl\Ray.cl" />
@@ -115,6 +118,7 @@
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Bounds.h" />
     <ClInclude Include="src\BVH.h" />
+    <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Image.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\ModelLoader.h" />
@@ -123,6 +127,7 @@
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\Triangle.h" />
     <ClInclude Include="src\TriangleMesh.h" />
+    <ClInclude Include="src\Util.h" />
     <ClInclude Include="src\Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

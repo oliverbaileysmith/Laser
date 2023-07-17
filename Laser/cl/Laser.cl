@@ -1,17 +1,17 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant unsigned int SAMPLES = 256;
-__constant unsigned int MAX_DEPTH = 32;
+__constant unsigned int SAMPLES = 64;
+__constant unsigned int MAX_DEPTH = 16;
 
-#include "Ray.cl"
+#include "Image.cl"
+#include "Camera.cl"
 #include "Triangle.cl"
 #include "Material.cl"
 #include "BVH.cl"
 
-float3 tracedebug(Ray* primaryRay, __global Vertex* vertices, __global Triangle* triangles,
-	unsigned int n_Triangles, __global Material* materials, __global mat4* transforms,
-	__global BVHLinearNode* bvh, __global RenderStats* renderStats, unsigned int* seed0,
-	unsigned int* seed1)
+float3 traceDebug(Ray* primaryRay, __global Vertex* vertices, __global Triangle* triangles,
+	__global Material* materials, __global mat4* transforms, __global BVHLinearNode* bvh,
+	__global RenderStats* renderStats, unsigned int* seed0,	unsigned int* seed1)
 {
 	Ray ray = *primaryRay;
 	float t = INFINITY;
@@ -44,9 +44,8 @@ float3 tracedebug(Ray* primaryRay, __global Vertex* vertices, __global Triangle*
 }
 
 float3 trace(Ray* primaryRay, __global Vertex* vertices, __global Triangle* triangles,
-	unsigned int n_Triangles, __global Material* materials, __global mat4* transforms,
-	__global BVHLinearNode* bvh, __global RenderStats* renderStats,	unsigned int* seed0,
-	unsigned int* seed1)
+	__global Material* materials, __global mat4* transforms, __global BVHLinearNode* bvh,
+	__global RenderStats* renderStats, unsigned int* seed0, unsigned int* seed1)
 {
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float3 mask = (float3)(1.0f, 1.0f, 1.0f);
@@ -80,24 +79,22 @@ float3 trace(Ray* primaryRay, __global Vertex* vertices, __global Triangle* tria
 	return color;
 }
 
-__kernel void Laser(__global float3* output, unsigned int imageWidth, unsigned int imageHeight,
-	float aspectRatio, float viewportWidth, float viewportHeight, float focalLength,
-	float3 cameraOrigin, float3 upperLeftCorner, __global Vertex* vertices,
-	__global Triangle* triangles, unsigned int n_Triangles, __global Material* materials,
-	__global mat4* transforms, __global BVHLinearNode* bvh, __global RenderStats* renderStats,
-	unsigned int xOffset, unsigned int yOffset, unsigned int tileWidth, unsigned int tileHeight)
+__kernel void Laser(__global float3* output, __global ImageProps* image,
+	__global CameraProps* camera, __global Vertex* vertices, __global Triangle* triangles,
+	__global Material* materials, __global mat4* transforms, __global BVHLinearNode* bvh,
+	__global RenderStats* renderStats, unsigned int xOffset, unsigned int yOffset)
 {	
 	// Calculate pixel coordinates
 	const unsigned int workItemID = get_global_id(0);
-	unsigned int x = xOffset + (workItemID % tileWidth);
-	unsigned int y = yOffset + (workItemID / tileWidth);
+	unsigned int x = xOffset + (workItemID % image->TileWidth);
+	unsigned int y = yOffset + (workItemID / image->TileWidth);
 
 	// Don't trace ray if pixel is not in image bounds
 	// This happens in right column and bottom row of tiles
-	if (x >= imageWidth || y >= imageHeight) return;
+	if (x >= image->Width || y >= image->Height) return;
 
-	float fx = (float)x / (float)(imageWidth - 1);
-	float fy = (float)y / (float)(imageHeight - 1);
+	float fx = (float)x / (float)(image->Width - 1);
+	float fy = (float)y / (float)(image->Height - 1);
 
 	// Seeds for random
 	unsigned int seed0 = x;
@@ -105,20 +102,14 @@ __kernel void Laser(__global float3* output, unsigned int imageWidth, unsigned i
 
 	// Generate primary ray
 	//atomic_inc(&(renderStats->n_PrimaryRays));
-	Ray primaryRay;
-	primaryRay.orig = cameraOrigin;
-	primaryRay.dir = upperLeftCorner;
-	primaryRay.dir.x += fx * viewportWidth;
-	primaryRay.dir.y -= fy * viewportHeight;
-	primaryRay.dir -= cameraOrigin;
-	primaryRay.dir = normalize(primaryRay.dir);
+	Ray primaryRay = generateRay(camera, fx, fy);
 
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float invSamples = 1.0f / SAMPLES;
 
 	for (int i = 0; i < SAMPLES; i++)
-		color += trace(&primaryRay, vertices, triangles, n_Triangles, materials, transforms, bvh, renderStats, &seed0, &seed1) * invSamples;
+		color += trace(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats, &seed0, &seed1) * invSamples;
 	output[workItemID] = color;
 
-	//output[workItemID] = tracedebug(&primaryRay, vertices, triangles, n_Triangles, materials, transforms, bvh, renderStats, &seed0, &seed1);
+	//output[workItemID] = traceDebug(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats, &seed0, &seed1);
 }

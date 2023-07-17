@@ -5,7 +5,6 @@ __constant unsigned int MAX_DEPTH = 16;
 
 #include "Image.cl"
 #include "Camera.cl"
-#include "Ray.cl"
 #include "Triangle.cl"
 #include "Material.cl"
 #include "BVH.cl"
@@ -103,13 +102,7 @@ __kernel void Laser(__global float3* output, __global ImageProps* image,
 
 	// Generate primary ray
 	//atomic_inc(&(renderStats->n_PrimaryRays));
-	Ray primaryRay;
-	primaryRay.orig = camera->Position;
-	primaryRay.dir = camera->UpperLeftCorner;
-	primaryRay.dir += fx * camera->ViewportHorizontal;
-	primaryRay.dir -= fy * camera->ViewportVertical;
-	primaryRay.dir -= camera->Position;
-	primaryRay.dir = normalize(primaryRay.dir);
+	Ray primaryRay = generateRay(camera, fx, fy);
 
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float invSamples = 1.0f / SAMPLES;

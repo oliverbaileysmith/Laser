@@ -33,7 +33,6 @@ private:
 
 	// Scene
 	std::vector<TriangleMesh> m_Meshes;
-	cl_uint m_NTriangles;
 	std::vector<Material> m_Materials;
 	std::vector<glm::mat4> m_Transforms;
 	BVH m_BVH;

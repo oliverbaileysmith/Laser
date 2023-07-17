@@ -10,8 +10,7 @@
 #define VERIFY(x) if (!x) return false
 
 Application::Application()
-	: m_GlobalWorkSize(0), m_LocalWorkSize(64),	m_NTriangles(0),
-	m_Image(600, 600, 128, 128, Image::Format::ppm),
+	: m_GlobalWorkSize(0), m_LocalWorkSize(64), m_Image(600, 600, 128, 128, Image::Format::ppm),
 	m_Camera({ -0.5f, 0.5f, 1.0f }, { 1.0f, 0.0f, 0.0f }, 60.0f, m_Image.GetProps().AspectRatio)
 {
 	m_GlobalWorkSize = m_Image.GetProps().TileHeight * m_Image.GetProps().TileWidth;
@@ -182,8 +181,6 @@ bool Application::LoadModel(const std::string& filepath)
 		std::cout << "No valid models were loaded, terminating program!" << std::endl;
 		return false;
 	}
-
-	m_NTriangles = m_Meshes[0].GetTrianglesPtr()->size();
 	
 	return true;
 }

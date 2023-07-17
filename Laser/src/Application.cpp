@@ -11,19 +11,10 @@
 
 Application::Application()
 	: m_GlobalWorkSize(0), m_LocalWorkSize(64),	m_NTriangles(0),
-	m_Image(600, 600, 128, 128, Image::Format::ppm), m_ViewportHeight(2.0f),
-	m_ViewportWidth(m_ViewportHeight * m_Image.GetProps().AspectRatio),
-	m_FocalLength(1.0f), m_CameraOrigin({ 0.0f,0.0f,1.0f }),
-	m_UpperLeftCorner(m_CameraOrigin)
+	m_Image(600, 600, 128, 128, Image::Format::ppm), m_Camera(45.0f, m_Image.GetProps().AspectRatio)
 {
 	m_GlobalWorkSize = m_Image.GetProps().TileHeight * m_Image.GetProps().TileWidth;
-
 	m_AppStart = clock();
-
-	// TODO: camera abstraction
-	m_UpperLeftCorner.x -= m_ViewportWidth / 2.0f;
-	m_UpperLeftCorner.y += m_ViewportHeight / 2.0f;
-	m_UpperLeftCorner.z -= m_FocalLength;
 }
 
 bool Application::Init()
@@ -48,8 +39,8 @@ bool Application::Init()
 	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // green
 	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false, false, 0.0f }; // light
 	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
-	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
-	//m_Materials[4] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
+	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
+	m_Materials[4] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
 
 	// Set transforms
 	Transform t;
@@ -66,6 +57,8 @@ bool Application::Init()
 bool Application::GenBuffers()
 {
 	VERIFY(m_OCL.AddBuffer("output", CL_MEM_WRITE_ONLY, m_GlobalWorkSize * sizeof(cl_float3)));
+	VERIFY(m_OCL.AddBuffer("imageProps", CL_MEM_READ_ONLY, sizeof(Image::Props)));
+	VERIFY(m_OCL.AddBuffer("cameraProps", CL_MEM_READ_ONLY, sizeof(Camera::Props)));
 	VERIFY(m_OCL.AddBuffer("vertices", CL_MEM_READ_ONLY, m_BVH.m_Vertices.size() * sizeof(Vertex)));
 	VERIFY(m_OCL.AddBuffer("triangles", CL_MEM_READ_ONLY, m_BVH.m_Triangles.size() * sizeof(Triangle)));
 	VERIFY(m_OCL.AddBuffer("materials", CL_MEM_READ_ONLY, m_Materials.size() * sizeof(Material)));
@@ -78,26 +71,15 @@ bool Application::GenBuffers()
 
 bool Application::SetKernelArgs()
 {
-	Image::Props props = m_Image.GetProps();
-
 	VERIFY(m_OCL.SetKernelArg(0, "output"));
-	VERIFY(m_OCL.SetKernelArg(1, props.Width));
-	VERIFY(m_OCL.SetKernelArg(2, props.Height));
-	VERIFY(m_OCL.SetKernelArg(3, props.AspectRatio));
-	VERIFY(m_OCL.SetKernelArg(4, m_ViewportWidth));
-	VERIFY(m_OCL.SetKernelArg(5, m_ViewportHeight));
-	VERIFY(m_OCL.SetKernelArg(6, m_FocalLength));
-	VERIFY(m_OCL.SetKernelArg(7, m_CameraOrigin));
-	VERIFY(m_OCL.SetKernelArg(8, m_UpperLeftCorner));
-	VERIFY(m_OCL.SetKernelArg(9, "vertices"));
-	VERIFY(m_OCL.SetKernelArg(10, "triangles"));
-	VERIFY(m_OCL.SetKernelArg(11, m_NTriangles));
-	VERIFY(m_OCL.SetKernelArg(12, "materials"));
-	VERIFY(m_OCL.SetKernelArg(13, "transforms"));
-	VERIFY(m_OCL.SetKernelArg(14, "bvh"));
-	VERIFY(m_OCL.SetKernelArg(15, "stats"));
-	VERIFY(m_OCL.SetKernelArg(18, props.TileWidth));
-	VERIFY(m_OCL.SetKernelArg(19, props.TileHeight));
+	VERIFY(m_OCL.SetKernelArg(1, "imageProps"));
+	VERIFY(m_OCL.SetKernelArg(2, "cameraProps"));
+	VERIFY(m_OCL.SetKernelArg(3, "vertices"));
+	VERIFY(m_OCL.SetKernelArg(4, "triangles"));
+	VERIFY(m_OCL.SetKernelArg(5, "materials"));
+	VERIFY(m_OCL.SetKernelArg(6, "transforms"));
+	VERIFY(m_OCL.SetKernelArg(7, "bvh"));
+	VERIFY(m_OCL.SetKernelArg(8, "stats"));
 
 	return true;
 }
@@ -108,7 +90,12 @@ bool Application::Render()
 	// clock_t timeStart = clock();
 	m_RenderStart = clock();
 
+	Image::Props imageProps = m_Image.GetProps();
+	Camera::Props cameraProps = m_Camera.GetProps();
+
 	// Write scene data to OpenCL buffers
+	VERIFY(m_OCL.QueueWrite("imageProps", CL_TRUE, 0, sizeof(Image::Props), &imageProps));
+	VERIFY(m_OCL.QueueWrite("cameraProps", CL_TRUE, 0, sizeof(Camera::Props), &cameraProps));
 	VERIFY(m_OCL.QueueWrite("vertices", CL_TRUE, 0, m_BVH.m_Vertices.size() * sizeof(Vertex), m_BVH.m_Vertices.data()));
 	VERIFY(m_OCL.QueueWrite("triangles", CL_TRUE, 0, m_BVH.m_Triangles.size() * sizeof(Triangle), m_BVH.m_Triangles.data()));
 	VERIFY(m_OCL.QueueWrite("materials", CL_TRUE, 0, m_Materials.size() * sizeof(Material), m_Materials.data()));
@@ -130,8 +117,8 @@ bool Application::Render()
 		cl_uint yOffset = tileY * props.TileHeight;
 
 		// Send per-tile offsets to OpenCL device
-		VERIFY(m_OCL.SetKernelArg(16, xOffset));
-		VERIFY(m_OCL.SetKernelArg(17, yOffset));
+		VERIFY(m_OCL.SetKernelArg(9, xOffset));
+		VERIFY(m_OCL.SetKernelArg(10, yOffset));
 
 		// Execute kernel
 		VERIFY(m_OCL.QueueKernel(NULL, m_GlobalWorkSize, m_LocalWorkSize));

@@ -6,6 +6,7 @@
 
 #include "OpenCLContext.h"
 #include "Image.h"
+#include "Camera.h"
 #include "RenderStats.h"
 #include "TriangleMesh.h"
 #include "Material.h"
@@ -37,16 +38,9 @@ private:
 	std::vector<glm::mat4> m_Transforms;
 	BVH m_BVH;
 
-	// Image
+	// Image and camera
 	Image m_Image;
-
-	// Camera
-	// TODO: Camera abstraction
-	cl_float m_ViewportHeight;
-	cl_float m_ViewportWidth;
-	cl_float m_FocalLength;
-	cl_float3 m_CameraOrigin;
-	cl_float3 m_UpperLeftCorner;
+	Camera m_Camera;
 	
 	// Profiler
 	RenderStats m_RenderStats;

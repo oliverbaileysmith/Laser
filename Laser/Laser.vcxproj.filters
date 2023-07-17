@@ -42,6 +42,9 @@
     <ClCompile Include="src\BVH.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="cl\Laser.cl" />
@@ -55,6 +58,8 @@
     <None Include="cl\BVH.cl" />
     <None Include="cl\Bounds.cl" />
     <None Include="cl\Vertex.cl" />
+    <None Include="cl\Camera.cl" />
+    <None Include="cl\Image.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Triangle.h">
@@ -91,6 +96,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

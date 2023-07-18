@@ -1,3 +1,6 @@
+#ifndef IMAGE_CL
+#define IMAGE_CL
+
 typedef struct ImageProps
 {
 	uint Width;
@@ -9,3 +12,5 @@ typedef struct ImageProps
 	uint nColumns;
 	int Dummy; // "Format" in host program
 } ImageProps;
+
+#endif // IMAGE_CL

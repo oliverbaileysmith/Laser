@@ -1,3 +1,6 @@
+#ifndef TRANSFORM_CL
+#define TRANSFORM_CL
+
 typedef float4 mat4[4];
 
 // Transform a point (uses homogeneous weight w = 1)
@@ -24,3 +27,5 @@ float3 multMat4Normal(mat4* m, float3* point)
 
 	return (float3)(x, y, z);
 }
+
+#endif // TRANSFORM_CL

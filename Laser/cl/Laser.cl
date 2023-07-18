@@ -1,17 +1,23 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant unsigned int SAMPLES = 64;
-__constant unsigned int MAX_DEPTH = 16;
+__constant unsigned int SAMPLES = 256;
+__constant unsigned int MAX_DEPTH = 8;
 
-#include "Image.cl"
-#include "Camera.cl"
-#include "Triangle.cl"
-#include "Material.cl"
 #include "BVH.cl"
+#include "Camera.cl"
+#include "Image.cl"
+#include "Intersection.cl"
+#include "Material.cl"
+#include "Random.cl"
+#include "Ray.cl"
+#include "RenderStats.cl"
+#include "Transform.cl"
+#include "Triangle.cl"
+#include "Vertex.cl"
 
 float3 traceDebug(Ray* primaryRay, __global Vertex* vertices, __global Triangle* triangles,
 	__global Material* materials, __global mat4* transforms, __global BVHLinearNode* bvh,
-	__global RenderStats* renderStats, unsigned int* seed0,	unsigned int* seed1)
+	__global RenderStats* renderStats)
 {
 	Ray ray = *primaryRay;
 	float t = INFINITY;
@@ -45,7 +51,7 @@ float3 traceDebug(Ray* primaryRay, __global Vertex* vertices, __global Triangle*
 
 float3 trace(Ray* primaryRay, __global Vertex* vertices, __global Triangle* triangles,
 	__global Material* materials, __global mat4* transforms, __global BVHLinearNode* bvh,
-	__global RenderStats* renderStats, unsigned int* seed0, unsigned int* seed1)
+	__global RenderStats* renderStats, uint* seed)
 {
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float3 mask = (float3)(1.0f, 1.0f, 1.0f);
@@ -55,6 +61,9 @@ float3 trace(Ray* primaryRay, __global Vertex* vertices, __global Triangle* tria
 
 	for (int depth = 0; depth < MAX_DEPTH; depth++)
 	{
+		// Adjust seed for ray depth
+		*seed += depth;
+
 		float t = INFINITY;
 		float3 n;
 		Intersection isect;
@@ -66,7 +75,7 @@ float3 trace(Ray* primaryRay, __global Vertex* vertices, __global Triangle* tria
 		// Local copy of material
 		Material material = materials[triangles[isect.TriangleIndex].Material];
 
-		bounceRay(&ray, &isect, vertices, triangles, &material, transforms, seed0, seed1);
+		bounceRay(&ray, &isect, vertices, triangles, &material, transforms, seed);
 
 		// Accumulate color		
 		color += mask * material.Emission;
@@ -93,23 +102,33 @@ __kernel void Laser(__global float3* output, __global ImageProps* image,
 	// This happens in right column and bottom row of tiles
 	if (x >= image->Width || y >= image->Height) return;
 
-	float fx = (float)x / (float)(image->Width - 1);
-	float fy = (float)y / (float)(image->Height - 1);
+	// Initial value of RNG seed
+	uint seed = x + y * image->Width;
 
-	// Seeds for random
-	unsigned int seed0 = x;
-	unsigned int seed1 = y;
-
-	// Generate primary ray
-	//atomic_inc(&(renderStats->n_PrimaryRays));
-	Ray primaryRay = generateRay(camera, fx, fy);
+	// START DEBUG
+	//float fx = ((float)x + randomFloat(&seed)) / (float)(image->Width - 1);
+	//float fy = ((float)y + randomFloat(&seed)) / (float)(image->Height - 1);
+	//Ray primaryRay = generateRay(camera, fx, fy);
+	//output[workItemID] = traceDebug(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats);
+	//return;
+	// END DEBUG
 
 	float3 color = (float3)(0.0f, 0.0f, 0.0f);
 	float invSamples = 1.0f / SAMPLES;
 
 	for (int i = 0; i < SAMPLES; i++)
-		color += trace(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats, &seed0, &seed1) * invSamples;
-	output[workItemID] = color;
-
-	//output[workItemID] = traceDebug(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats, &seed0, &seed1);
+	{
+		// Adjust seed for sample number
+		seed *= (i + 1);
+			
+		float fx = ((float)x + randomFloat(&seed)) / (float)(image->Width - 1);
+		float fy = ((float)y + randomFloat(&seed)) / (float)(image->Height - 1);
+	
+		// Generate primary ray
+		//atomic_inc(&(renderStats->n_PrimaryRays));
+		Ray primaryRay = generateRay(camera, fx, fy, &seed);
+	
+		color += trace(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats, &seed);
+	}
+	output[workItemID] = color * invSamples;
 }

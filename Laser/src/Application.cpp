@@ -11,7 +11,7 @@
 
 Application::Application()
 	: m_GlobalWorkSize(0), m_LocalWorkSize(64), m_Image(600, 600, 128, 128, Image::Format::ppm),
-	m_Camera({ -0.5f, 0.5f, 1.0f }, { 1.0f, 0.0f, 0.0f }, 60.0f, m_Image.GetProps().AspectRatio)
+	m_Camera({ 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 60.0f, m_Image.GetProps().AspectRatio)
 {
 	m_GlobalWorkSize = m_Image.GetProps().TileHeight * m_Image.GetProps().TileWidth;
 	m_AppStart = clock();

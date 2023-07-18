@@ -13,11 +13,11 @@ typedef struct Material
 	char dummy[4];
 } Material;
 
-void reflectDiffuse(Ray* ray, Intersection* isect, uint* seed0, uint* seed1)
+void reflectDiffuse(Ray* ray, Intersection* isect, uint* seed)
 {
 	// compute two random numbers to pick a random point on the hemisphere above the hitpoint
-	float rand1 = 2.0f * PI * getRandom(seed0, seed1);
-	float rand2 = getRandom(seed0, seed1);
+	float rand1 = 2.0f * PI * randomFloat(seed);
+	float rand2 = randomFloat(seed);
 	float rand2s = sqrt(rand2);
 
 	// create a local orthogonal coordinate frame centered at the hitpoint
@@ -99,7 +99,7 @@ float3 calcRefractionDirection(float3* normal, float3* incident, float refractiv
 
 void bounceRay(Ray* ray, Intersection* isect, __global Vertex* vertices,
 	__global Triangle* triangles, Material* material, __global mat4* transforms,
-	uint* seed0, uint* seed1)
+	uint* seed)
 {
 	// Local copy of vertex normals
 	float3 v0n = vertices[triangles[isect->TriangleIndex].v0].Normal;
@@ -141,7 +141,7 @@ void bounceRay(Ray* ray, Intersection* isect, __global Vertex* vertices,
         float reflectance = r0 + (1.0f - r0) * pow((1.0f - cosTheta), 5.0f);
 		
 		// Total internal reflection
-		if (refractiveIndexRatio * sinTheta > 1.0f || reflectance > getRandom(seed0, seed1))
+		if (refractiveIndexRatio * sinTheta > 1.0f || reflectance > randomFloat(seed))
 			reflectSpecular(ray, isect);
 			
 		// Refract
@@ -155,5 +155,5 @@ void bounceRay(Ray* ray, Intersection* isect, __global Vertex* vertices,
 	
 	// Process diffuse
 	else
-		reflectDiffuse(ray, isect, seed0, seed1);
+		reflectDiffuse(ray, isect, seed);
 }

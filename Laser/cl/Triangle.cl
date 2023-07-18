@@ -1,3 +1,6 @@
+#ifndef TRIANGLE_CL
+#define TRIANGLE_CL
+
 #include "RenderStats.cl"
 
 typedef struct Triangle
@@ -38,3 +41,5 @@ bool intersectTriangle(Ray* ray, float3 v0, float3 v1, float3 v2,
 
 	return true;
 }
+
+#endif // TRIANGLE_CL

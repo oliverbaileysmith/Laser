@@ -1,6 +1,12 @@
-#include "Random.cl"
+#ifndef MATERIAL_CL
+#define MATERIAL_CL
+
 #include "Intersection.cl"
+#include "Material.cl"
+#include "Random.cl"
+#include "Ray.cl"
 #include "Transform.cl"
+#include "Triangle.cl"
 #include "Vertex.cl"
 
 typedef struct Material
@@ -157,3 +163,5 @@ void bounceRay(Ray* ray, Intersection* isect, __global Vertex* vertices,
 	else
 		reflectDiffuse(ray, isect, seed);
 }
+
+#endif // MATERIAL_CL

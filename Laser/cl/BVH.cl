@@ -1,4 +1,14 @@
+#ifndef BVH_CL
+#define BVH_CL
+
 #include "Bounds.cl"
+#include "Ray.cl"
+#include "Vertex.cl"
+#include "Triangle.cl"
+#include "Material.cl"
+#include "Transform.cl"
+#include "Intersection.cl"
+#include "RenderStats.cl"
 
 typedef struct BVHLinearNode
 {
@@ -111,3 +121,5 @@ bool intersectBVH(Ray* ray, __global Vertex* vertices,
 	}
 	return hit;
 }
+
+#endif // BVH_CL

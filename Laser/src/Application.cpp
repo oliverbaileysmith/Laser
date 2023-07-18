@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <glm/glm.hpp>
+
 #include "Vertex.h"
 #include "ModelLoader.h"
 #include "Transform.h"
@@ -9,9 +11,16 @@
 
 #define VERIFY(x) if (!x) return false
 
+glm::vec3 cameraPosition = { 1.00f, 1.00f, 1.00f };
+glm::vec3 cameraTarget = { 0.50f, 0.50f, 0.50f };
+float focusDistance = glm::length(cameraTarget - cameraPosition);
+
+cl_float3 position = { cameraPosition.x, cameraPosition.y, cameraPosition.z };
+cl_float3 target = { cameraTarget.x, cameraTarget.y, cameraTarget.z };
+
 Application::Application()
 	: m_GlobalWorkSize(0), m_LocalWorkSize(64), m_Image(600, 600, 128, 128, Image::Format::ppm),
-	m_Camera({ 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 60.0f, m_Image.GetProps().AspectRatio)
+	m_Camera(position, target, 75.0f, m_Image.GetProps().AspectRatio, 0.03f, focusDistance)
 {
 	m_GlobalWorkSize = m_Image.GetProps().TileHeight * m_Image.GetProps().TileWidth;
 	m_AppStart = clock();
@@ -30,7 +39,8 @@ bool Application::Init()
 	m_Image.SetTileRowsAndColumns(nRows, nColumns);
 
 	// Load geometry
-	VERIFY(LoadModel("res/models/utah-teapot.obj"));
+	//VERIFY(LoadModel("res/models/utah-teapot.obj"));
+	VERIFY(LoadModel("res/models/cube.obj"));
 
 	// Set materials
 	m_Materials.resize(5);
@@ -46,7 +56,8 @@ bool Application::Init()
 	Transform t;
 	m_Transforms.resize(2);
 	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	m_Transforms[1] = t.Generate(glm::vec3(0.5f, 0.5f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
+	//m_Transforms[1] = t.Generate(glm::vec3(0.5f, 0.5f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
+	m_Transforms[1] = t.Generate(glm::vec3(-0.5f, -0.5f, -0.5f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f));
 
 	// Construct BVH
 	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);

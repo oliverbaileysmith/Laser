@@ -1,3 +1,6 @@
+#ifndef RENDERSTATS_CL
+#define RENDERSTATS_CL
+
 typedef struct RenderStats
 {
 	unsigned int n_PrimaryRays;
@@ -5,3 +8,5 @@ typedef struct RenderStats
 	unsigned int n_RayTriangleIsects;
 	float RenderTime;
 } RenderStats;
+
+#endif // RENDERSTATS_CL

@@ -1,3 +1,8 @@
+#ifndef BOUNDS_CL
+#define BOUNDS_CL
+
+#include "Ray.cl"
+
 typedef struct Bounds
 {
 	float3 pMin;
@@ -33,3 +38,5 @@ bool intersectBounds(Ray* ray, Bounds* bounds)
     }
     return true;
 }
+
+#endif // BOUNDS_CL

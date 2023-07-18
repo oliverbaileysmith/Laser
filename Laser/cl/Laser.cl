@@ -3,11 +3,17 @@ __constant float PI = 3.14159265359f;
 __constant unsigned int SAMPLES = 256;
 __constant unsigned int MAX_DEPTH = 8;
 
-#include "Image.cl"
-#include "Camera.cl"
-#include "Triangle.cl"
-#include "Material.cl"
 #include "BVH.cl"
+#include "Camera.cl"
+#include "Image.cl"
+#include "Intersection.cl"
+#include "Material.cl"
+#include "Random.cl"
+#include "Ray.cl"
+#include "RenderStats.cl"
+#include "Transform.cl"
+#include "Triangle.cl"
+#include "Vertex.cl"
 
 float3 traceDebug(Ray* primaryRay, __global Vertex* vertices, __global Triangle* triangles,
 	__global Material* materials, __global mat4* transforms, __global BVHLinearNode* bvh,
@@ -114,13 +120,13 @@ __kernel void Laser(__global float3* output, __global ImageProps* image,
 	{
 		// Adjust seed for sample number
 		seed *= (i + 1);
-	
+			
 		float fx = ((float)x + randomFloat(&seed)) / (float)(image->Width - 1);
 		float fy = ((float)y + randomFloat(&seed)) / (float)(image->Height - 1);
 	
 		// Generate primary ray
 		//atomic_inc(&(renderStats->n_PrimaryRays));
-		Ray primaryRay = generateRay(camera, fx, fy);
+		Ray primaryRay = generateRay(camera, fx, fy, &seed);
 	
 		color += trace(&primaryRay, vertices, triangles, materials, transforms, bvh, renderStats, &seed);
 	}

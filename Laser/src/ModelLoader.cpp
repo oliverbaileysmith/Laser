@@ -7,25 +7,24 @@
 
 #include "Vertex.h"
 
-std::vector<TriangleMesh> ModelLoader::LoadModel(const std::string& filepath)
+bool ModelLoader::LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes)
 {
-    std::vector<TriangleMesh> meshes;
     Assimp::Importer importer;
 
     // Read file and triangulate meshes
-    const aiScene* assimpScene = importer.ReadFile(filepath, aiProcess_Triangulate);
+    const aiScene* assimpScene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices);
 
     // Ensure scene is created correctly
     if (!assimpScene || assimpScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !assimpScene->mRootNode)
     {
         std::cout << "Error loading model at " << filepath << "." << std::endl;
         std::cout << "Assimp error: " << importer.GetErrorString() << std::endl;
-        return std::vector<TriangleMesh>();
+        return false;
     }
 
     // Process first node
     ProcessAssimpNode(assimpScene->mRootNode, assimpScene, meshes);
-    return meshes;
+    return true;
 }
 
 void ModelLoader::ProcessAssimpNode(aiNode* assimpNode, const aiScene* assimpScene, std::vector<TriangleMesh>& meshes)

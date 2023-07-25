@@ -1,7 +1,7 @@
 __constant float EPSILON = 0.00001f;
 __constant float PI = 3.14159265359f;
-__constant unsigned int SAMPLES = 256;
-__constant unsigned int MAX_DEPTH = 8;
+__constant unsigned int SAMPLES = 64;
+__constant unsigned int MAX_DEPTH = 16;
 
 #include "BVH.cl"
 #include "Camera.cl"

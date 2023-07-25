@@ -24,7 +24,9 @@ public:
 	bool WriteOutput();
 
 private:
-	bool LoadModel(const std::string& filepath);
+	bool LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes);
+	void CombineMeshes(std::vector<TriangleMesh>& meshes, std::vector<Vertex>& vertices,
+		std::vector<Triangle>& triangles);
 
 	// OpenCL context
 	OpenCLContext m_OCL;
@@ -32,9 +34,7 @@ private:
 	size_t m_LocalWorkSize;
 
 	// Scene
-	std::vector<TriangleMesh> m_Meshes;
 	std::vector<Material> m_Materials;
-	std::vector<glm::mat4> m_Transforms;
 	BVH m_BVH;
 
 	// Image and camera

@@ -24,7 +24,8 @@ public:
 	bool WriteOutput();
 
 private:
-	bool LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes);
+	bool LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes,
+		unsigned int materialIndex, unsigned int transformIndex);
 	void CombineMeshes(std::vector<TriangleMesh>& meshes, std::vector<Vertex>& vertices,
 		std::vector<Triangle>& triangles);
 

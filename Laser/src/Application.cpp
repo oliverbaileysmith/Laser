@@ -41,32 +41,32 @@ bool Application::Init()
 
 	// Load geometry
 	std::vector<TriangleMesh> meshes;
+	VERIFY(LoadModel("res/models/utah-teapot.obj", meshes, 6, 1));
+	//VERIFY(LoadModel("res/models/cube.obj", meshes, 6, 2));
+	VERIFY(LoadModel("res/models/shapes.obj", meshes, 6, 3));
+
 	std::vector<Vertex> vertices;
 	std::vector<Triangle> triangles;
-
-	//VERIFY(LoadModel("res/models/utah-teapot.obj"));
-	//VERIFY(LoadModel("res/models/cube.obj"));
-	VERIFY(LoadModel("res/models/shapes.obj", meshes));
 	CombineMeshes(meshes, vertices, triangles);
 
 	// Set materials
-	m_Materials.resize(5);
+	m_Materials.resize(7);
 	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // white
 	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // red
 	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // green
 	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false, false, 0.0f }; // light
-	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
-	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
-	m_Materials[4] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
+	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
+	m_Materials[5] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
+	m_Materials[6] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
 
 	// Set transforms
 	std::vector<glm::mat4> transforms;
 	Transform t;
-	transforms.resize(2);
+	transforms.resize(4);
 	transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	//m_Transforms[1] = t.Generate(glm::vec3(0.5f, 0.5f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
-	//m_Transforms[1] = t.Generate(glm::vec3(-0.5f, -0.5f, -0.5f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f));
-	transforms[1] = t.Generate(glm::vec3(0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.25f));
+	transforms[1] = t.Generate(glm::vec3(0.5f, 25.0f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
+	transforms[2] = t.Generate(glm::vec3(-0.5f, -0.5f, -0.5f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f));
+	transforms[3] = t.Generate(glm::vec3(0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.25f));
 
 	// Construct BVH
 	m_BVH = BVH(vertices, triangles, transforms);
@@ -190,17 +190,14 @@ bool Application::WriteOutput()
 	return true;
 }
 
-bool Application::LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes)
+bool Application::LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes,
+	unsigned int materialIndex, unsigned int transformIndex)
 {
 	ModelLoader loader;
-	loader.LoadModel(filepath, meshes);
-
+	
 	// Ensure model was loaded
-	if (meshes.empty())
-	{
-		std::cout << "No valid models were loaded, terminating program!" << std::endl;
+	if (!loader.LoadModel(filepath, meshes, materialIndex, transformIndex))
 		return false;
-	}
 	
 	return true;
 }

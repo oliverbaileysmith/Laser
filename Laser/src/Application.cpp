@@ -14,13 +14,14 @@
 glm::vec3 cameraPosition = { 1.00f, 1.00f, 1.00f };
 glm::vec3 cameraTarget = { 0.50f, 0.50f, 0.50f };
 float focusDistance = glm::length(cameraTarget - cameraPosition);
+float aperture = 0.0f;
 
 cl_float3 position = { cameraPosition.x, cameraPosition.y, cameraPosition.z };
 cl_float3 target = { cameraTarget.x, cameraTarget.y, cameraTarget.z };
 
 Application::Application()
 	: m_GlobalWorkSize(0), m_LocalWorkSize(64), m_Image(600, 600, 128, 128, Image::Format::ppm),
-	m_Camera(position, target, 75.0f, m_Image.GetProps().AspectRatio, 0.03f, focusDistance)
+	m_Camera(position, target, 75.0f, m_Image.GetProps().AspectRatio, aperture, focusDistance)
 {
 	m_GlobalWorkSize = m_Image.GetProps().TileHeight * m_Image.GetProps().TileWidth;
 	m_AppStart = clock();
@@ -39,28 +40,36 @@ bool Application::Init()
 	m_Image.SetTileRowsAndColumns(nRows, nColumns);
 
 	// Load geometry
-	//VERIFY(LoadModel("res/models/utah-teapot.obj"));
-	VERIFY(LoadModel("res/models/cube.obj"));
+	std::vector<TriangleMesh> meshes;
+	VERIFY(LoadModel("res/models/utah-teapot.obj", meshes, 6, 1));
+	//VERIFY(LoadModel("res/models/cube.obj", meshes, 6, 2));
+	VERIFY(LoadModel("res/models/shapes.obj", meshes, 6, 3));
+
+	std::vector<Vertex> vertices;
+	std::vector<Triangle> triangles;
+	CombineMeshes(meshes, vertices, triangles);
 
 	// Set materials
-	m_Materials.resize(5);
+	m_Materials.resize(7);
 	m_Materials[0] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // white
 	m_Materials[1] = { {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // red
 	m_Materials[2] = { {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // green
 	m_Materials[3] = { {1.0f, 1.0f, 1.0f}, {5.0f, 5.0f, 5.0f}, false, false, 0.0f }; // light
-	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
-	//m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
-	m_Materials[4] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
+	m_Materials[4] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, true, false, 0.0f }; // metal/mirror
+	m_Materials[5] = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, false, true, 1.5f }; // glass
+	m_Materials[6] = { {0.2f, 0.4f, 0.8f}, {0.0f, 0.0f, 0.0f}, false, false, 0.0f }; // blue matte
 
 	// Set transforms
+	std::vector<glm::mat4> transforms;
 	Transform t;
-	m_Transforms.resize(2);
-	m_Transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
-	//m_Transforms[1] = t.Generate(glm::vec3(0.5f, 0.5f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
-	m_Transforms[1] = t.Generate(glm::vec3(-0.5f, -0.5f, -0.5f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f));
+	transforms.resize(4);
+	transforms[0] = t.Generate(); // identity (index 0 reserved for when no transform is supplied)
+	transforms[1] = t.Generate(glm::vec3(0.5f, 25.0f, 1.0f), 45.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.04f));
+	transforms[2] = t.Generate(glm::vec3(-0.5f, -0.5f, -0.5f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f));
+	transforms[3] = t.Generate(glm::vec3(0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.25f));
 
 	// Construct BVH
-	m_BVH = BVH(*m_Meshes[0].GetVerticesPtr(), *m_Meshes[0].GetTrianglesPtr(), m_Transforms);
+	m_BVH = BVH(vertices, triangles, transforms);
 
 	return true;
 }
@@ -181,17 +190,56 @@ bool Application::WriteOutput()
 	return true;
 }
 
-bool Application::LoadModel(const std::string& filepath)
+bool Application::LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes,
+	unsigned int materialIndex, unsigned int transformIndex)
 {
 	ModelLoader loader;
-	m_Meshes = loader.LoadModel(filepath);
-
+	
 	// Ensure model was loaded
-	if (m_Meshes.empty())
-	{
-		std::cout << "No valid models were loaded, terminating program!" << std::endl;
+	if (!loader.LoadModel(filepath, meshes, materialIndex, transformIndex))
 		return false;
-	}
 	
 	return true;
+}
+
+void Application::CombineMeshes(std::vector<TriangleMesh>& meshes, std::vector<Vertex>& vertices, std::vector<Triangle>& triangles)
+{
+	// Combine loaded geometry into one buffer for BVH construction
+
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		vertices.insert(vertices.end(), meshes[i].m_Vertices.begin(), meshes[i].m_Vertices.end());
+		triangles.insert(triangles.end(), meshes[i].m_Triangles.begin(), meshes[i].m_Triangles.end());
+	}
+
+	// TODO: Remove this
+	// Add Cornell-style room and light for testing purposes
+	vertices.push_back({ -3.0f, -3.00f,  3.0f }); // front bottom left
+	vertices.push_back({ -3.0f, -3.00f, -3.0f }); // back bottom left
+	vertices.push_back({ -3.0f,  3.00f,  3.0f }); // front top left
+	vertices.push_back({ -3.0f,  3.00f, -3.0f }); // back top left
+	vertices.push_back({ 3.0f, -3.00f,  3.0f }); // front bottom right
+	vertices.push_back({ 3.0f, -3.00f, -3.0f }); // back bottom right
+	vertices.push_back({ 3.0f,  3.00f,  3.0f }); // front top right
+	vertices.push_back({ 3.0f,  3.00f, -3.0f }); // back top right
+	vertices.push_back({ -1.5f,  2.99f, -1.5f }); // light back left
+	vertices.push_back({ 1.5f,  2.99f, -1.5f }); // light back right
+	vertices.push_back({ 1.5f,  2.99f,  1.5f }); // light front right
+	vertices.push_back({ -1.5f,  2.99f,  1.5f }); // light front left
+
+	cl_uint n = vertices.size() - 12;
+	triangles.push_back({ n + 0,  n + 1,  n + 3, 1, 0 }); // left
+	triangles.push_back({ n + 0,  n + 3,  n + 2, 1, 0 });
+	triangles.push_back({ n + 1,  n + 5,  n + 7, 0, 0 }); // back
+	triangles.push_back({ n + 1,  n + 7,  n + 3, 0, 0 });
+	triangles.push_back({ n + 5,  n + 4,  n + 6, 2, 0 }); // right
+	triangles.push_back({ n + 5,  n + 6,  n + 7, 2, 0 });
+	triangles.push_back({ n + 4,  n + 0,  n + 2, 0, 0 }); // front
+	triangles.push_back({ n + 4,  n + 2,  n + 6, 0, 0 });
+	triangles.push_back({ n + 3,  n + 7,  n + 6, 0, 0 }); // top
+	triangles.push_back({ n + 3,  n + 6,  n + 2, 0, 0 });
+	triangles.push_back({ n + 0, n + 4, n + 5, 0, 0 }); // bottom
+	triangles.push_back({ n + 0, n + 5, n + 1, 0, 0 });
+	triangles.push_back({ n + 8, n + 9, n + 10, 3, 0 }); // light
+	triangles.push_back({ n + 8, n + 10, n + 11, 3, 0 });
 }

@@ -14,7 +14,7 @@ public:
 	struct BVHTriangleInfo
 	{
 	public:
-		BVHTriangleInfo(cl_uint triangleNumber, const ::Bounds& bounds);
+		BVHTriangleInfo(cl_uint triangleNumber, const ::Bounds &bounds);
 
 	public:
 		cl_uint TriangleNumber;
@@ -22,7 +22,7 @@ public:
 		cl_float3 Centroid;
 
 	private:
-		cl_float3 CalcCentroid(const ::Bounds& bounds);
+		cl_float3 CalcCentroid(const ::Bounds &bounds);
 	};
 
 	/********** BVH BUILD NODE **********/
@@ -30,7 +30,7 @@ public:
 	{
 	public:
 		Bounds Bounds;
-		BVHBuildNode* Children[2];
+		BVHBuildNode *Children[2];
 		cl_uint SplitAxis;
 		cl_uint FirstTriangle;
 		cl_uint nTriangles;
@@ -39,8 +39,10 @@ public:
 		BVHBuildNode();
 		~BVHBuildNode();
 
-		void InitLeaf(cl_uint firstTriangle, cl_uint nTriangles, const ::Bounds& bounds);
-		void InitInterior(cl_uint axis, BVHBuildNode* child0, BVHBuildNode* child1);
+		void InitLeaf(cl_uint firstTriangle, cl_uint nTriangles,
+			const ::Bounds &bounds);
+		void InitInterior(cl_uint axis, BVHBuildNode *child0,
+			BVHBuildNode *child1);
 	};
 
 	/********** BVH LINEAR NODE **********/
@@ -56,14 +58,17 @@ public:
 	/********** BVH **********/
 public:
 	BVH();
-	BVH(const std::vector<Vertex>& vertices, const std::vector<Triangle>& triangles, const std::vector<glm::mat4>& transforms);
+	BVH(const std::vector<Vertex> &vertices,
+		const std::vector<Triangle> &triangles,
+		const std::vector<glm::mat4> &transforms);
 	~BVH();
 
 private:
-	BVHBuildNode* Build(std::vector<BVHTriangleInfo>& trianglesInfo, cl_uint start,
-		cl_uint end, cl_uint* totalNodes, std::vector<Triangle>& orderedTriangles);
+	BVHBuildNode *Build(std::vector<BVHTriangleInfo> &trianglesInfo,
+		cl_uint start, cl_uint end, cl_uint *totalNodes,
+		std::vector<Triangle> &orderedTriangles);
 
-	cl_uint Flatten(BVHBuildNode* node, cl_uint* offset);
+	cl_uint Flatten(BVHBuildNode *node, cl_uint *offset);
 
 	Bounds CalcTriangleBounds(cl_uint triangle) const;
 

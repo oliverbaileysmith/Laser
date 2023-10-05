@@ -16,7 +16,7 @@ class Application
 {
 public:
 	Application();
-	
+
 	bool Init();
 	bool GenBuffers();
 	bool SetKernelArgs();
@@ -24,10 +24,11 @@ public:
 	bool WriteOutput();
 
 private:
-	bool LoadModel(const std::string& filepath, std::vector<TriangleMesh>& meshes,
-		unsigned int materialIndex, unsigned int transformIndex);
-	void CombineMeshes(std::vector<TriangleMesh>& meshes, std::vector<Vertex>& vertices,
-		std::vector<Triangle>& triangles);
+	bool LoadModel(const std::string &filepath,
+		std::vector<TriangleMesh> &meshes, unsigned int materialIndex,
+		unsigned int transformIndex);
+	void CombineMeshes(std::vector<TriangleMesh> &meshes,
+		std::vector<Vertex> &vertices, std::vector<Triangle> &triangles);
 
 	// OpenCL context
 	OpenCLContext m_OCL;
@@ -41,7 +42,7 @@ private:
 	// Image and camera
 	Image m_Image;
 	Camera m_Camera;
-	
+
 	// Profiler
 	RenderStats m_RenderStats;
 	clock_t m_AppStart;

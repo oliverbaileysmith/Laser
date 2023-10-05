@@ -1,6 +1,8 @@
 #include "Application.h"
 
-#define VERIFY(x) if (!x) return -1
+#define VERIFY(x) \
+	if (!x)       \
+	return -1
 
 int main()
 {

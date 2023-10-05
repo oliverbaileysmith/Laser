@@ -3,7 +3,7 @@ A GPU path tracer in C++/OpenCL.
 
 ## Sample Output
 <figure>
-    <img src="https://github.com/oliverbaileysmith/Laser/assets/64656218/aa96ca77-7c78-4abc-8794-6c88170b0795"
+    <img src="/Laser/res/gallery/teapot.jpg"
          alt="Utah Teapot rendered with Laser">
 	<br>
     <figcaption>
